@@ -46,3 +46,13 @@
 改完后运行 `python3 build.py`，会重新生成根目录的 `index.html`。
 
 外部依赖都从 CDN 加载：three.js（3D 预览）、earcut（三角化）、opencc-js（简繁转换，点按钮时才加载）、Google Fonts（字体）。
+
+## 许可证 / License
+
+本项目使用 [PolyForm Noncommercial 1.0.0](LICENSE)：**个人和非商业用途免费**，可以使用、修改、分享。**商业用途需要另行授权**，比如用它做印章、滚轮、切模来卖，或者放进收费的产品或服务里。商用授权请通过 GitHub 联系 [gracege17](https://github.com/gracege17)。
+
+This project is licensed under [PolyForm Noncommercial 1.0.0](LICENSE): **free for personal and other noncommercial use**, including changing and sharing it. **Commercial use requires a separate license**, for example selling stamps, rollers or cutters made with it, or using it in a paid product or service. For a commercial license, contact [gracege17](https://github.com/gracege17) on GitHub.
+
+Copyright (c) 2026 gracege17
+
+第三方组件 / Third-party: three.js (MIT), earcut (ISC), opencc-js (Apache-2.0)，由 CDN 加载；字体来自 Google Fonts（SIL Open Font License）。
