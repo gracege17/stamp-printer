@@ -701,15 +701,12 @@ function typicalWidths(ink, W, H, ppm) {
     v.sort((p, q) => p - q); return v.length ? v[v.length >> 1] : 0; };
   return { strokeMed: ridge(dIn, 1), gapMed: ridge(dOut, 0) };
 }
-// The clearest stamp printed so far (「喜」, 2025-03, Onshape): typical stroke 0.54 mm, typical gap 0.62 mm.
+// Reference: typical stroke and gap of a stamp that printed very clearly (shown as 「参考」 in the clarity table).
 const XI = { stroke: 0.54, gap: 0.62 };
 // GAP_RATIO (阴文): a cut-out stroke narrower than this × nozzle tends to print unclear.
 const GAP_RATIO = 0.75;
-// 阳文 enclosed spaces (inside 口 / 田 / 日) print unclear when they are both narrow AND small in area. Calibrated on real prints (0.4 nozzle):
-//   「福」田 cells 0.32–0.36 mm wide, 0.17–0.20 mm²  → unclear
-//   「恭喜發財」喜 slit 0.44 mm wide but 1.83 mm² (long) → clear
-//   original 「喜」 smallest space 0.76 mm, 0.82 mm²   → clear
-// Open slits (not enclosed on all sides) printed fine, so they are not flagged.
+// 阳文 enclosed spaces (inside 口 / 田 / 日) print unclear when they are both narrow AND small in area (calibrated on test prints,
+// 0.4 nozzle): a narrow but long slit prints fine, a narrow small cell does not. Open slits (not enclosed on all sides) are not flagged.
 /* Bambu Studio 工艺配置（A1）。数值取自 Bambu Studio 自带配置 resources/profiles/BBL/process：
    层高、首层高度、外墙线宽。只取排层和清晰度需要的这几项。 */
 const SLICERS = {
@@ -719,7 +716,7 @@ const SLICERS = {
   'a1-016': { name: '0.16mm Optimal @BBL A1', lh: 0.16, first: 0.2, lw: 0.42 },
   'a1-020': { name: '0.20mm Standard @BBL A1', lh: 0.20, first: 0.2, lw: 0.42 }
 };
-const BENCH_SLICER = 'a1-0.2-010';   // 「喜」和「恭喜發財」都是用这个配置打的
+const BENCH_SLICER = 'a1-0.2-010';   // the clarity thresholds were calibrated with this profile
 const slicerOf = s => SLICERS[s.slicer] || SLICERS[BENCH_SLICER];
 // Layer tops the way Bambu Studio cuts them (generate_object_layers): a fixed first layer, then one more layer
 // while the middle of that layer is still inside the object. Each layer prints the cross-section at its middle.
@@ -1005,11 +1002,11 @@ function drawSection(mesh, s) {
 
 function showClarity(t, s) {
   const el = $('#clarity'); if (!t.strokeMed) { el.hidden = true; return; } el.hidden = false;
-  const f2 = x => x.toFixed(2), heavy = t.strokeMed > 1.0 && t.gapMed < 0.45; // 恭喜發財 0.90 / 0.50 printed well; 新賀福 1.2–1.4 / 0.3 were too bold
-  el.innerHTML = `<table class="kv"><caption>${tl('清晰度（mm）', 'Clarity (mm)')}</caption><thead><tr><th scope="col"></th><th scope="col">${tl('这个章', 'This stamp')}</th><th scope="col" title="${tl('印得最清楚的「喜」', 'The clearest stamp printed so far')}">${tl('「喜」', 'Reference')}</th></tr></thead><tbody>`
+  const f2 = x => x.toFixed(2), heavy = t.strokeMed > 1.0 && t.gapMed < 0.45; // calibrated on test prints: about 0.9 / 0.5 still prints well, 1.2+ / 0.3 is too bold
+  el.innerHTML = `<table class="kv"><caption>${tl('清晰度（mm）', 'Clarity (mm)')}</caption><thead><tr><th scope="col"></th><th scope="col">${tl('这个章', 'This stamp')}</th><th scope="col" title="${tl('一个实测印得很清楚的章', 'A stamp that printed very clearly')}">${tl('参考', 'Reference')}</th></tr></thead><tbody>`
     + `<tr><th scope="row">${tl('笔画', 'Stroke')}</th><td class="me">${f2(t.strokeMed)}</td><td>${XI.stroke.toFixed(2)}</td></tr>`
     + `<tr><th scope="row">${tl('空隙', 'Gap')}</th><td class="me">${f2(t.gapMed)}</td><td>${XI.gap.toFixed(2)}</td></tr></tbody></table>`
-    + (heavy ? `<p class="tip">${tl('比「喜」粗很多、空隙更挤，容易糊：调小「加粗」或字重降一档。', 'Much bolder than the reference with tight gaps, so it may blur: lower Bold + or use a lighter weight.')}</p>` : '');
+    + (heavy ? `<p class="tip">${tl('比参考粗很多、空隙更挤，容易糊：调小「加粗」或字重降一档。', 'Much bolder than the reference with tight gaps, so it may blur: lower Bold + or use a lighter weight.')}</p>` : '');
   el.classList.toggle('heavy', heavy);
 }
 function showWarns(list) {
@@ -1873,7 +1870,7 @@ const I18N_EN = {
 "标准 0.1mm": "Standard 0.1mm",
 "精细 0.06mm": "Fine 0.06mm",
 "Bambu Studio 配置": "Bambu Studio profile",
-"0.10mm Standard @BBL A1 0.2 nozzle（「喜」用的）": "0.10mm Standard @BBL A1 0.2 nozzle (reference)",
+"0.10mm Standard @BBL A1 0.2 nozzle（参考配置）": "0.10mm Standard @BBL A1 0.2 nozzle (reference)",
 "印面朝上、手柄贴平台，不用支撑。": "Face up, handle on the bed. No supports.",
 "图文区域": "Design area",
 "输入文字，下载 STL，直接切片。": "Type, download the STL, slice.",
