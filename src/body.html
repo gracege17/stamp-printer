@@ -1,0 +1,288 @@
+<div class="wrap">
+<header>
+  <div class="mark" aria-hidden="true">印</div>
+  <div class="head-text">
+    <h1>印章打印器</h1>
+    <p class="sub">输入文字，下载 STL，直接切片。</p>
+  </div>
+  <div class="head-actions">
+    <button class="btn" id="langBtn" type="button" lang="">English</button>
+    <button class="btn" id="impBtn">导入设置…</button>
+    <input type="file" id="impFile" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- Preview: what you will print, how big it is, and the download -->
+  <section class="preview" aria-label="预览与导出">
+    <div class="stage">
+      <div id="view3d" aria-label="3D 模型预览，可拖动旋转"></div>
+      <span class="tag">拖动旋转 · 滚轮缩放</span>
+      <span class="tag r" id="mirrorTag">印面已镜像</span>
+    </div>
+
+    <div class="summary">
+      <figure class="imp"><canvas id="imp" width="300" height="300"></canvas><figcaption>盖出来的效果</figcaption></figure>
+      <dl class="kpis">
+        <div><dt id="kpiFaceL">印面</dt><dd id="kpiFace">—</dd><dd class="in2" id="kpiFaceIn"></dd></div>
+        <div><dt id="kpiHL">总高</dt><dd id="kpiH">—</dd><dd class="in2" id="kpiHIn"></dd></div>
+        <div><dt id="kpiTextL">文字区域</dt><dd id="kpiText">—</dd><dd class="in2" id="kpiTextIn"></dd></div>
+      </dl>
+      <p class="breakdown" id="stats">—</p>
+      <div class="sizes">
+        <div class="tsize" id="textSize" aria-live="polite"></div>
+        <div class="clarity" id="clarity" hidden></div>
+      </div>
+    </div>
+
+    <ul class="warn" id="warn" hidden></ul>
+
+    <div class="export">
+      <div class="dlrow"><button class="btn primary" id="dl" title="STL、规格卡、规格说明和设置文件">下载 STL + 规格</button><button class="btn" id="dlStl">仅 STL</button></div>
+      <div class="status" id="status" role="status"></div>
+      <details class="dims">
+        <summary>模型信息</summary>
+        <p class="meshinfo" id="meshInfo"></p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Settings, one topic per tab -->
+  <div class="controls">
+    <div class="starter">
+      <div class="seg pics presets cats" data-k="product" role="group" aria-label="类别">
+        <button data-v="stamp" title="印章"><svg viewBox="0 0 40 34" aria-hidden="true"><rect x="10" y="3" width="20" height="5" rx="1"/><path d="M12 8h16v14H12z" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="7" y="22" width="26" height="8" rx="1.5"/></svg><span>印章</span></button>
+        <button data-v="roller" title="滚轮压花"><svg viewBox="0 0 40 34" aria-hidden="true"><path d="M9 8h22M9 26h22" fill="none" stroke="currentColor" stroke-width="2.2"/><ellipse cx="9" cy="17" rx="4" ry="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M31 8a4 9 0 0 1 0 18" fill="none" stroke="currentColor" stroke-width="2.2"/><ellipse cx="9" cy="17" rx="1.6" ry="3.6"/><path d="M15 12l2 2.5-2 2.5M20 12l2 2.5-2 2.5M25 12l2 2.5-2 2.5M15 19l2 2.5-2 2.5M20 19l2 2.5-2 2.5M25 19l2 2.5-2 2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>滚轮</span></button>
+        <button data-v="cutter" title="切模"><svg viewBox="0 0 40 34" aria-hidden="true"><path d="M20 30C8 22 5 15 8 10c3-5 9-4 12 1 3-5 9-6 12-1 3 5 0 12-12 20z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-width="3"/><path d="M20 25C12 19 10 15 12 12c2-3 6-2 8 2 2-4 6-5 8-2 2 3 0 7-8 13z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><span>切模</span></button>
+      </div>
+      <div class="seg pics presets subs" role="group" aria-label="模板" data-show="product=stamp">
+        <button data-preset="name" title="姓名方章"><svg viewBox="0 0 40 34" aria-hidden="true"><rect x="7" y="4" width="26" height="26" rx="2" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="11" y="8" width="8" height="8" rx="1"/><rect x="21" y="8" width="8" height="8" rx="1"/><rect x="11" y="18" width="8" height="8" rx="1"/><rect x="21" y="18" width="8" height="8" rx="1"/></svg><span>方章</span></button>
+        <button data-preset="round" title="圆形店章"><svg viewBox="0 0 40 34" aria-hidden="true"><circle cx="20" cy="17" r="14" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="10.6" cy="18.6" r="1.7"/><circle cx="11.8" cy="12.2" r="1.7"/><circle cx="16.8" cy="8.1" r="1.7"/><circle cx="23.2" cy="8.1" r="1.7"/><circle cx="28.2" cy="12.2" r="1.7"/><circle cx="29.4" cy="18.6" r="1.7"/><path d="M20 12.5l1.4 2.9 3.2.4-2.3 2.2.6 3.1L20 19.6l-2.9 1.5.6-3.1-2.3-2.2 3.2-.4z"/></svg><span>圆章</span></button>
+        <button data-preset="long" title="长条章"><svg viewBox="0 0 40 34" aria-hidden="true"><rect x="2" y="9" width="36" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="7" y="13" width="8" height="8" rx="1"/><rect x="16" y="13" width="8" height="8" rx="1"/><rect x="25" y="13" width="8" height="8" rx="1"/></svg><span>长条章</span></button>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="设置">
+      <button role="tab" id="tab-text" data-tab="text" aria-controls="panel-text">文字</button>
+      <button role="tab" id="tab-image" data-tab="image" aria-controls="panel-image">图案</button>
+      <button role="tab" id="tab-face" data-tab="face" aria-controls="panel-face">印面</button>
+      <button role="tab" id="tab-handle" data-tab="handle" aria-controls="panel-handle" data-show="product=stamp">手柄</button>
+      <button role="tab" id="tab-print" data-tab="print" aria-controls="panel-print">打印</button>
+    </nav>
+
+    <!-- 文字 -->
+    <section class="group panel" id="panel-text" role="tabpanel" aria-labelledby="tab-text" data-panel="text">
+      <div data-show="layoutE=grid" class="f">
+        <input class="txt" id="text" data-k="text" type="text" autocomplete="off" aria-label="印章文字">
+        <p class="hint"><b>/</b> 换行，如 陈氏/之印</p>
+      </div>
+      <div data-show="layoutE=grid" class="row">
+        <label class="f" data-show="latinText=0"><span>排列</span>
+          <div class="seg" data-k="dir"><button data-v="v">竖排·右起</button><button data-v="h">横排</button></div></label>
+        <label class="f"><span>字间距</span><div class="in"><input type="number" id="gap" data-k="gap" step="0.1" min="0" max="10"><i>mm</i></div></label>
+      </div>
+      <div data-show="layoutE=ring" class="f">
+        <span>环形文字</span>
+        <input class="txt" id="ringText" data-k="ringText" type="text" autocomplete="off" aria-label="环形文字">
+      </div>
+      <div data-show="layoutE=ring" class="row three">
+        <label class="f"><span>环字高</span><div class="in"><input type="number" id="ringH" data-k="ringH" step="0.5" min="1" max="30"><i>mm</i></div></label>
+        <label class="f"><span>环绕角度</span><div class="in"><input type="number" id="ringSpan" data-k="ringSpan" step="5" min="30" max="350"><i>°</i></div></label>
+        <label class="f"><span>距边框</span><div class="in"><input type="number" id="padR" data-k="pad" step="0.1" min="0" max="10"><i>mm</i></div></label>
+      </div>
+      <div data-show="layoutE=ring" class="f"><span>中心</span>
+        <div class="seg" data-k="center"><button data-v="star">五角星</button><button data-v="text">文字</button><button data-v="none">无</button></div></div>
+      <div data-show="layoutE=ring" class="row">
+        <label class="f" data-show="center=text"><span>中心文字</span><div class="in"><input type="text" id="centerText" data-k="centerText"></div></label>
+        <label class="f" data-show="center=star|text"><span>中心大小</span><div class="in"><input type="number" id="centerSize" data-k="centerSize" step="0.5" min="1" max="60"><i>mm</i></div></label>
+      </div>
+      <div data-show="layoutE=ring" class="row three">
+        <label class="f"><span>下方文字</span><div class="in"><input type="text" id="bottomText" data-k="bottomText"></div></label>
+        <label class="f"><span>字高</span><div class="in"><input type="number" id="bottomH" data-k="bottomH" step="0.5" min="1" max="30"><i>mm</i></div></label>
+        <label class="f"><span>下移</span><div class="in"><input type="number" id="bottomY" data-k="bottomY" step="0.5" min="-40" max="40"><i>mm</i></div></label>
+      </div>
+      <div class="conv" data-show="noCjk=0">
+        <span class="hint">简繁</span>
+        <button class="btn" id="toT" type="button">简 → 繁</button>
+        <button class="btn" id="toS" type="button">繁 → 简</button>
+      </div>
+
+      <h3>字体</h3>
+      <div class="fontrow">
+        <label class="in"><span class="sr">字体</span><select id="font" data-k="font"></select></label>
+        <label class="in" data-show="hasWeights=1" style="flex:0 0 92px"><span class="sr">字重</span><select id="weight" data-k="weight"></select></label>
+      </div>
+      <p class="hint err" data-show="latinNeedsEn=1">英文建议换「英文」组的字体，如 Roboto Slab、Bebas Neue。</p>
+      <div class="btnrow">
+        <button class="btn" id="upFontBtn" title="上传 .ttf / .otf，会记在这个浏览器里">上传字体…</button>
+        <button class="btn" id="rmFontBtn" data-show="customFont=1">移除此字体</button>
+        <input type="file" id="upFont" accept=".ttf,.otf,.woff,.woff2" hidden>
+      </div>
+      <div class="row">
+        <label class="f"><span>加粗 <b class="rangeval" id="thickenV"></b></span><input type="range" id="thicken" data-k="thicken" min="0" max="0.8" step="0.05"></label>
+        <label class="f"><span>拉伸 <b class="rangeval" id="stretchV"></b></span><input type="range" id="stretch" data-k="stretch" min="1" max="2.5" step="0.1"></label>
+      </div>
+    </section>
+
+    <!-- 图案 -->
+    <section class="group panel" id="panel-image" role="tabpanel" aria-labelledby="tab-image" data-panel="image" hidden>
+      <div class="btnrow">
+        <button class="btn" id="imgBtn" type="button">上传图片…</button>
+        <button class="btn" id="imgRm" type="button" data-show="hasImg=1">移除图片</button>
+        <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg" hidden>
+      </div>
+      <p class="hint" data-show="hasImg=0">PNG / JPG / SVG。黑白分明的 logo、剪影最好，照片不适合。</p>
+      <div class="imgrow" data-show="hasImg=1">
+        <canvas id="imgPrev" width="200" height="200" aria-label="图案转成黑白后的样子"></canvas>
+        <div class="imgmeta"><b id="imgNameV"></b><p class="hint">红色部分会凸起。</p></div>
+      </div>
+      <div class="f" data-show="hasImg=1"><span>用法</span>
+        <div class="seg" data-k="imgMode"><button data-v="none">关</button><button data-v="only">仅图案</button><button data-v="with">图案 + 文字</button></div></div>
+      <label class="f" data-show="hasImg=1"><span>深浅阈值 <b class="rangeval" id="imgThV"></b></span>
+        <input type="range" id="imgThreshold" data-k="imgThreshold" min="10" max="245" step="5">
+        <span class="scale"><span>← 只要最深的</span><span>浅一点的也算 →</span></span></label>
+      <label class="check" data-show="hasImg=1"><input type="checkbox" id="imgInvert" data-k="imgInvert"> 反色</label>
+      <div class="row" data-show="hasImg=1&imgMode=only">
+        <div class="f" data-show="product=roller"><span>填充</span><div class="seg" data-k="imgFit"><button data-v="fit">适应</button><button data-v="fill">铺满</button></div></div>
+        <label class="f" data-show="fitScale=1"><span>图案大小 <b class="rangeval" id="imgScaleV"></b></span><input type="range" id="imgScale" data-k="imgScale" min="0.2" max="1" step="0.05"></label>
+      </div>
+      <h3 data-show="hasImg=1&imgMode=with&layoutE=grid">排版</h3>
+      <div class="f" data-show="hasImg=1&imgMode=with&layoutE=grid"><span>位置</span>
+        <div class="seg pics icons" data-k="imgPos"><button data-v="top" title="图在上" aria-label="图在上"><svg viewBox="0 0 40 34" aria-hidden="true"><path fill-rule="evenodd" d="M14 3h12v12H14z M16 13l3.6-4.8 2.4 3.0 1.4-1.4 2.2 3.2z"/><rect x="8.0" y="19.0" width="24" height="3.5" rx="1"/><rect x="12.0" y="25.5" width="16" height="3.5" rx="1"/></svg></button><button data-v="bottom" title="图在下" aria-label="图在下"><svg viewBox="0 0 40 34" aria-hidden="true"><rect x="8.0" y="4.0" width="24" height="3.5" rx="1"/><rect x="12.0" y="10.5" width="16" height="3.5" rx="1"/><path fill-rule="evenodd" d="M14 19h12v12H14z M16 29l3.6-4.8 2.4 3.0 1.4-1.4 2.2 3.2z"/></svg></button><button data-v="left" title="图在左" aria-label="图在左"><svg viewBox="0 0 40 34" aria-hidden="true"><path fill-rule="evenodd" d="M4 11h12v12H4z M6 21l3.6-4.8 2.4 3.0 1.4-1.4 2.2 3.2z"/><rect x="19.0" y="11.5" width="17" height="3.5" rx="1"/><rect x="19.0" y="18.0" width="12" height="3.5" rx="1"/></svg></button><button data-v="right" title="图在右" aria-label="图在右"><svg viewBox="0 0 40 34" aria-hidden="true"><rect x="4.0" y="11.5" width="17" height="3.5" rx="1"/><rect x="9.0" y="18.0" width="12" height="3.5" rx="1"/><path fill-rule="evenodd" d="M24 11h12v12H24z M26 21l3.6-4.8 2.4 3.0 1.4-1.4 2.2 3.2z"/></svg></button></div></div>
+      <div class="layout-row" data-show="hasImg=1&imgMode=with&layoutE=grid">
+        <div class="f"><span>对齐</span>
+          <div class="seg tools" data-k="imgAlign" data-show="imgPos=top|bottom"><button data-v="start" title="靠左" aria-label="靠左"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="1.6" height="18" opacity=".55"/><rect x="6.5" y="6" width="8" height="4" rx="1"/><rect x="6.5" y="14" width="14" height="4" rx="1"/></svg></button><button data-v="center" title="水平居中" aria-label="水平居中"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="11.2" y="3" width="1.6" height="18" opacity=".55"/><rect x="8" y="6" width="8" height="4" rx="1"/><rect x="5" y="14" width="14" height="4" rx="1"/></svg></button><button data-v="end" title="靠右" aria-label="靠右"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="19.4" y="3" width="1.6" height="18" opacity=".55"/><rect x="9.5" y="6" width="8" height="4" rx="1"/><rect x="3.5" y="14" width="14" height="4" rx="1"/></svg></button></div>
+          <div class="seg tools" data-k="imgAlign" data-show="imgPos=left|right"><button data-v="start" title="靠上" aria-label="靠上"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="1.6" opacity=".55"/><rect x="6" y="6.5" width="4" height="8" rx="1"/><rect x="14" y="6.5" width="4" height="14" rx="1"/></svg></button><button data-v="center" title="垂直居中" aria-label="垂直居中"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11.2" width="18" height="1.6" opacity=".55"/><rect x="6" y="8" width="4" height="8" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button><button data-v="end" title="靠下" aria-label="靠下"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="19.4" width="18" height="1.6" opacity=".55"/><rect x="6" y="9.5" width="4" height="8" rx="1"/><rect x="14" y="3.5" width="4" height="14" rx="1"/></svg></button></div></div>
+        <label class="f"><span>间距</span><div class="in"><input type="number" id="imgGap" data-k="imgGap" step="0.2" min="0" max="15"><i>mm</i></div></label>
+      </div>
+      <label class="f" data-show="hasImg=1&imgMode=with&layoutE=grid"><span>图案大小 <b class="rangeval" id="imgSizeV"></b></span>
+        <input type="range" id="imgSize" data-k="imgSize" min="0.15" max="0.85" step="0.05"></label>
+      <label class="f" data-show="hasImg=1&imgMode=with&layoutE=ring"><span>中心图案大小</span><div class="in"><input type="number" id="centerSizeImg" data-k="centerSize" step="0.5" min="1" max="60"><i>mm</i></div></label>
+      <p class="hint" data-show="hasImg=1&imgMode=with&layoutE=ring">圆章的图案放在中间。</p>
+    </section>
+
+    <!-- 印面 -->
+    <section class="group panel" id="panel-face" role="tabpanel" aria-labelledby="tab-face" data-panel="face" hidden>
+      <div class="stack" data-show="product=stamp">
+      <div class="f"><span>形状</span>
+        <div class="seg pics icons" data-k="shape"><button data-v="square" title="方形" aria-label="方形"><svg viewBox="0 0 40 34" aria-hidden="true"><rect x="8" y="5" width="24" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></button><button data-v="rect" title="长方形" aria-label="长方形"><svg viewBox="0 0 40 34" aria-hidden="true"><rect x="3" y="9" width="34" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></button><button data-v="circle" title="圆形" aria-label="圆形"><svg viewBox="0 0 40 34" aria-hidden="true"><circle cx="20" cy="17" r="13" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></button></div></div>
+      <div class="seg pics icons" data-k="layout" data-show="shape=circle"><button data-v="ring" title="环形排字" aria-label="环形排字"><svg viewBox="0 0 40 34" aria-hidden="true"><circle cx="20" cy="17" r="14" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M9.5 15a10.5 10.5 0 0 1 21 0" fill="none" stroke="currentColor" stroke-width="3.2" stroke-dasharray="2.6 1.6"/><circle cx="20" cy="19" r="2.6"/></svg></button><button data-v="grid" title="居中排字" aria-label="居中排字"><svg viewBox="0 0 40 34" aria-hidden="true"><circle cx="20" cy="17" r="14" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="13" y="12" width="6" height="4.5" rx="1"/><rect x="21" y="12" width="6" height="4.5" rx="1"/><rect x="13" y="18" width="6" height="4.5" rx="1"/><rect x="21" y="18" width="6" height="4.5" rx="1"/></svg></button></div>
+      <div class="row three">
+        <label class="f"><span id="wLabel">边长</span><div class="in"><input type="number" id="w" data-k="w" step="0.5" min="5" max="150"><i>mm</i></div></label>
+        <label class="f" data-show="shape=rect"><span>高</span><div class="in"><input type="number" id="h" data-k="h" step="0.5" min="5" max="150"><i>mm</i></div></label>
+        <label class="f" data-show="shape=square|rect"><span>圆角</span><div class="in"><input type="number" id="corner" data-k="corner" step="0.5" min="0" max="30"><i>mm</i></div></label>
+        <label class="f"><span>边框粗</span><div class="in"><input type="number" id="border" data-k="border" step="0.1" min="0" max="10"><i>mm</i></div></label>
+        <label class="f" data-show="layoutE=grid"><span>内边距</span><div class="in"><input type="number" id="pad" data-k="pad" step="0.1" min="0" max="20"><i>mm</i></div></label>
+        <label class="f"><span>外留边</span><div class="in"><input type="number" id="margin" data-k="margin" step="0.1" min="0" max="20"><i>mm</i></div></label>
+      </div>
+      <div class="f"><span>字</span>
+        <div class="seg" data-k="mode"><button data-v="yang">阳文</button><button data-v="yin">阴文</button></div></div>
+      <div class="row three">
+        <label class="f"><span>字凸起</span><div class="in"><input type="number" id="reliefH" data-k="reliefH" step="0.1" min="0.4" max="10"><i>mm</i></div></label>
+        <label class="f" title="顶上几层每一笔往里收一点，盖出来更实。0 = 不收"><span>字顶收窄</span><div class="in"><input type="number" id="topInset" data-k="topInset" step="0.05" min="0" max="0.4"><i>mm</i></div></label>
+        <label class="f" data-show="handle=none"><span>底板厚</span><div class="in"><input type="number" id="baseT" data-k="baseT" step="0.1" min="0.6" max="20"><i>mm</i></div></label>
+      </div>
+      </div>
+      <div class="stack" data-show="product=cutter">
+        <div class="seg" data-k="cutterKind"><button data-v="cookie">饼干</button><button data-v="clay">黏土</button></div>
+        <div class="f"><span>外形</span>
+          <div class="seg pics icons" data-k="cutterShape"><button data-v="follow" title="跟随图案" aria-label="跟随图案"><svg viewBox="0 0 40 34" aria-hidden="true"><path d="M8 26V9h7c5 0 7 2 7 5s-2 4-4 4c3 0 6 2 6 5 0 3-3 4-7 4H8z" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M27 9v18h6" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></button><button data-v="circle" title="圆形外形" aria-label="圆形外形"><svg viewBox="0 0 40 34" aria-hidden="true"><circle cx="20" cy="17" r="13" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></button><button data-v="square" title="方形外形" aria-label="方形外形"><svg viewBox="0 0 40 34" aria-hidden="true"><rect x="8" y="5" width="24" height="24" rx="4" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></button></div></div>
+        <div class="row three">
+          <label class="f"><span>图案宽</span><div class="in"><input type="number" id="cutterW" data-k="cutterW" step="1" min="8" max="200"><i>mm</i></div></label>
+          <label class="f"><span>图案高</span><div class="in"><input type="number" id="cutterH" data-k="cutterH" step="1" min="8" max="200"><i>mm</i></div></label>
+          <label class="f"><span>外扩</span><div class="in"><input type="number" id="cutterOffset" data-k="cutterOffset" step="0.5" min="0.5" max="15"><i>mm</i></div></label>
+        </div>
+        <div class="row three">
+          <label class="f"><span>高度</span><div class="in"><input type="number" id="cutterHeight" data-k="cutterHeight" step="1" min="4" max="40"><i>mm</i></div></label>
+          <label class="f"><span>刀口厚</span><div class="in"><input type="number" id="bladeT" data-k="bladeT" step="0.1" min="0.4" max="3"><i>mm</i></div></label>
+          <label class="f"><span>根部厚</span><div class="in"><input type="number" id="wallT" data-k="wallT" step="0.1" min="0.8" max="5"><i>mm</i></div></label>
+        </div>
+        <div class="row three">
+          <label class="f"><span>边沿宽</span><div class="in"><input type="number" id="flangeW" data-k="flangeW" step="0.5" min="0" max="15"><i>mm</i></div></label>
+          <label class="f"><span>边沿厚</span><div class="in"><input type="number" id="flangeT" data-k="flangeT" step="0.2" min="1" max="6"><i>mm</i></div></label>
+        </div>
+        <label class="check"><input type="checkbox" id="cutterImprint" data-k="cutterImprint"> 内部压纹（一压同时切形和压花）</label>
+        <label class="f" data-show="cutterImprint=true"><span>压纹离刀口</span><div class="in"><input type="number" id="imprintGap" data-k="imprintGap" step="0.5" min="0.5" max="10"><i>mm</i></div></label>
+      </div>
+      <div class="stack" data-show="product=roller">
+        <div class="row three">
+          <label class="f"><span>直径</span><div class="in"><input type="number" id="rollerD" data-k="rollerD" step="1" min="15" max="150"><i>mm</i></div></label>
+          <label class="f"><span>长度</span><div class="in"><input type="number" id="rollerL" data-k="rollerL" step="1" min="20" max="240"><i>mm</i></div></label>
+          <label class="f"><span>内孔</span><div class="in"><input type="number" id="rollerHole" data-k="rollerHole" step="1" min="0" max="140"><i>mm</i></div></label>
+        </div>
+        <div class="row three">
+          <label class="f"><span>花纹深</span><div class="in"><input type="number" id="reliefHR" data-k="reliefH" step="0.1" min="0.4" max="10"><i>mm</i></div></label>
+          <label class="f"><span>每圈重复</span><div class="in"><input type="number" id="rollerN" data-k="rollerN" step="1" min="1" max="12"><i>×</i></div></label>
+          <label class="f" data-show="wallpaper=0"><span>沿长重复</span><div class="in"><input type="number" id="rollerM" data-k="rollerM" step="1" min="1" max="8"><i>×</i></div></label>
+        </div>
+        <div class="row three">
+          <label class="f" data-show="wallpaper=0"><span>图案间距</span><div class="in"><input type="number" id="rollerGap" data-k="rollerGap" step="0.5" min="0" max="20"><i>mm</i></div></label>
+          <label class="f"><span>两端留边</span><div class="in"><input type="number" id="rollerEnd" data-k="rollerEnd" step="0.5" min="0" max="30"><i>mm</i></div></label>
+        </div>
+        <label class="check"><input type="checkbox" id="rollerSlope" data-k="rollerSlope"> 下沿斜边（45°，免支撑）</label>
+      </div>
+    </section>
+
+    <!-- 手柄 -->
+    <section class="group panel" id="panel-handle" role="tabpanel" aria-labelledby="tab-handle" data-panel="handle" hidden>
+      <div class="seg pics" data-k="handle"><button data-v="none"><svg viewBox="0 0 40 34" aria-hidden="true"><rect x="5" y="22" width="30" height="6" rx="1"/></svg><span>不要手柄</span></button><button data-v="grip"><svg viewBox="0 0 40 34" aria-hidden="true"><rect x="5" y="3" width="30" height="6" rx="1"/><path d="M6 9h28q-2 11 0 22H6q2-11 0-22z"/></svg><span>带手柄</span></button></div>
+      <div class="row" data-show="handle=grip">
+        <label class="f"><span>手柄高度</span><div class="in"><input type="number" id="handleH" data-k="handleH" step="1" min="2" max="150"><i>mm</i></div></label>
+        <label class="f"><span>直段</span><div class="in"><input type="number" id="neckH" data-k="neckH" step="0.5" min="0" max="50"><i>mm</i></div></label>
+        <label class="f"><span>手柄外扩</span><div class="in"><input type="number" id="handlePad" data-k="handlePad" step="0.1" min="0" max="20"><i>mm</i></div></label>
+      </div>
+
+      <h3 data-show="handle=grip">手指凹槽</h3>
+      <div class="seg pics" data-k="groove" data-show="handle=grip">
+        <button data-v="none"><svg viewBox="0 0 40 34" aria-hidden="true"><rect x="9" y="5" width="22" height="24" rx="2"/></svg><span>不要</span></button>
+        <button data-v="long"><svg viewBox="0 0 40 34" aria-hidden="true"><path d="M9 5h22q-5 12 0 24H9q5-12 0-24z"/></svg><span>左右</span></button>
+        <button data-v="short"><svg viewBox="0 0 40 34" aria-hidden="true"><path d="M9 5q11 5 22 0v24q-11-5-22 0z"/></svg><span>前后</span></button>
+        <button data-v="xy"><svg viewBox="0 0 40 34" aria-hidden="true"><path d="M9 5q11 5 22 0q-5 12 0 24q-11-5-22 0q5-12 0-24z"/></svg><span>四面</span></button>
+      </div>
+      <div class="groove-row" data-show="handle=grip&groove=long|short|xy">
+        <div class="groove-ctl">
+          <label class="f"><span>凹槽深度</span><div class="in"><input type="number" id="grooveD" data-k="grooveD" step="0.5" min="0" max="15"><i>mm</i></div></label>
+          <label class="f"><span>凹槽宽度 <b class="rangeval" id="grooveWV"></b></span>
+            <input type="range" id="grooveW" data-k="grooveW" min="30" max="100" step="5">
+            <span class="scale"><span>← 窄而集中</span><span>宽而平缓 →</span></span></label>
+          <label class="f"><span>弧线形状</span>
+            <div class="seg" data-k="grooveShape"><button data-v="arc" title="边缘清楚">圆弧</button><button data-v="soft" title="边缘圆滑">柔和</button></div></label>
+        </div>
+        <div class="sec-view" id="sectionView"></div>
+      </div>
+
+      <label class="f" data-show="handle=grip"><span>腰身 <b class="rangeval" id="bulgeV"></b></span>
+        <input type="range" id="bulge" data-k="bulge" min="-8" max="8" step="0.5">
+        <span class="scale"><span>← 中间变细</span><span>笔直</span><span>中间变粗 →</span></span></label>
+      <details class="more" data-show="handle=grip">
+        <summary>更多设置</summary>
+        <div class="more-body">
+          <label class="f"><span>底部倒角</span><div class="in"><input type="number" id="chamfer" data-k="chamfer" step="0.2" min="0" max="10"><i>mm</i></div></label>
+          <label class="f"><span>最大坡度 <b class="rangeval" id="maxAngleV"></b></span>
+            <input type="range" id="maxAngle" data-k="maxAngle" min="10" max="45" step="5">
+            <span class="scale"><span>← 更平缓、更好打</span><span>更陡、更紧凑 →</span></span></label>
+        </div>
+      </details>
+      <p class="hint" id="handleNote" hidden></p>
+    </section>
+
+    <!-- 打印 -->
+    <section class="group panel" id="panel-print" role="tabpanel" aria-labelledby="tab-print" data-panel="print" hidden>
+      <div class="row">
+        <label class="f"><span>喷嘴直径</span><div class="in"><input type="number" id="nozzle" data-k="nozzle" step="0.05" min="0.1" max="1.2"><i>mm</i></div></label>
+        <label class="f"><span>轮廓细度</span><div class="in"><select id="ppm" data-k="ppm"><option value="6">快速 0.17mm</option><option value="10">标准 0.1mm</option><option value="16">精细 0.06mm</option></select></div></label>
+      </div>
+      <label class="f"><span>Bambu Studio 配置</span><div class="in"><select id="slicer" data-k="slicer">
+        <option value="a1-0.2-010">0.10mm Standard @BBL A1 0.2 nozzle（「喜」用的）</option>
+        <option value="a1-008">0.08mm Extra Fine @BBL A1</option>
+        <option value="a1-012">0.12mm Fine @BBL A1</option>
+        <option value="a1-016">0.16mm Optimal @BBL A1</option>
+        <option value="a1-020">0.20mm Standard @BBL A1</option>
+      </select></div></label>
+      <p class="hint" id="slicerNote"></p>
+      <label class="check"><input type="checkbox" id="mirror" data-k="mirror"> 镜像印面</label>
+      <p class="hint">印面朝上、手柄贴平台，不用支撑。</p>
+    </section>
+
+  </div>
+</main>
+</div>
