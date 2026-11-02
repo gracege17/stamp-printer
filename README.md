@@ -1,58 +1,62 @@
 # 印章打印器 · Stamp Maker
 
-**English:** type text (or upload a logo) and get a 3D-printable stamp STL with exact mm / inch specs. The interface switches between 中文 and English (top right); English is the default for non-Chinese browsers.
+**中文** · [English](README.en.md)
 
-输入文字（或上传图案），直接生成可以 3D 打印的印章 STL。印面已经镜像好，下载后拖进切片软件就能打（PLA 测试过）。
+输入文字或上传图案，直接生成可以 3D 打印的 **印章、滚轮压花、饼干 / 黏土切模** 的 STL，同时给出精确到 0.01 mm 的尺寸（附英寸）和规格卡。不用建模软件，下载后拖进切片软件就能打。
 
-**在线使用：** 打开仓库的 GitHub Pages 地址即可（Settings → Pages 里能看到链接）。也可以把 `index.html` 下载到电脑上，用浏览器直接打开。
+![印章打印器界面](docs/images/stamp_zh.png)
 
-## 功能
+**怎么打开：** 打开本仓库的 GitHub Pages 地址（Settings → Pages 里能看到）；或者下载 `index.html`，用浏览器直接打开。界面右上角可以切换中文 / English。
 
-- **三种印面**：方形姓名章（竖排右起，用 `/` 手动分列，如 `陈氏/之印`）、圆形环字章（中心五角星或文字，下方可加一行字）、长条章（横排或竖排，竖排时印面自动转成竖长条）
-- **阳文 / 阴文**，边框、圆角、内边距、字间距都能调
-- **三大类**：印章、滚轮、切模，在最上面切换
-- **切模**：饼干或黏土（耳环）切模，外形跟随图案或圆 / 方，可调高度、刀口和边沿；可加内部压纹，一压同时切形和压花
-- **滚轮压花**：空心圆筒滚轮，文字或图案按每圈 / 沿长重复铺满一圈，可调直径、长度、内孔和花纹深；竖着打，花纹下沿自动做 45° 台阶，不用支撑
-- **英文**：整词排版，自动分成 1–4 行让字母尽量大，也可以用 `/` 手动换行；圆章环字按字母宽度排开
-- **图案**：上传 PNG / JPG / WebP / SVG，可以「只用图案」或「图案 + 文字」（图在上 / 下 / 左 / 右，对齐靠左 / 居中 / 靠右，可调图文间距和占比，整组自动收紧居中；圆章放在中心）；可调深浅阈值、反色；照片类灰阶多的图会提醒；图案会存在浏览器里，也会写进设置文件
-- **字体**：中文、中文繁体、英文、日文、韩文五组（英文有 Cinzel、Playfair Display、Roboto Slab、Oswald、Bebas Neue、Pacifico）（思源宋体 / 黑体、繁体思源宋体 / 黑体 / 霞鹜文楷、日文明朝 / 黑体 / 毛笔、韩文明朝 / 黑体 / 宋明体等）；选的字体缺字时会提示；可以上传自己的 `.ttf` / `.otf`（比如篆书），浏览器会记住
-- **简繁转换**：一键简 → 繁 / 繁 → 简（台湾常用写法）
-- **一体手柄**：直筒，可调手柄高度、比直段宽多少、腰身、底端倒角和最大坡度；可加手指凹槽（方章选左右 / 前后，长条章选长边 / 短边，或四面）（可调深度、宽度和弧线形状，附俯视小图）；印面下方有一段不变形的直段（默认 3 mm），凹槽和腰身只作用在下面的手柄上；直筒加凹槽时手柄自动加宽，凹进去最窄处也不比印面窄；默认免支撑
-- **尺寸读数**：外形、总高（握柄 + 底板 + 字凸起）、文字整体和每个字的宽 × 高，都到 0.01 mm（和 Bambu Studio 一致）
-- **Bambu Studio 层高**：选 A1 的工艺配置，会显示切出来共几层、字凸起几层、实际凸起多高；字顶收窄按层对齐
-- **上架规格**：「下载 STL + 规格」会打包 STL、规格卡图片（印面和侧面同比例，mm / 英寸，附 10 mm 比例尺）、中英文规格说明（含可直接贴到 Etsy 的英文段落和实心重量）、设置文件
-- **导入设置**：以后导入 `_设置.json`，能还原出一模一样的印章
+## 三步做一个章
 
-- **打印前检查**：笔画细于喷嘴的地方会在预览里标黄并提醒；数字超出安全范围会按最近的上下限生成并说明；字体没下载好时不让导出
+1. **选类别和形状**：最上面一排选「印章 / 滚轮 / 切模」；印章下面再选方章、圆章或长条章。
+2. **输入文字或上传图案**：在「文字」页输入（用 `/` 换行，如 `陈氏/之印`），选字体；或者在「图案」页上传 logo。左边的 3D 和「盖出来的效果」会马上更新。
+3. **检查、下载**：笔画太细的地方会标黄、太小的空格标蓝，点「一键调整」可以自动修。确认尺寸后点「下载 STL + 规格」。
+
+## 图案 + 文字
+
+上传 PNG / JPG / SVG 后，可以只用图案，也可以和文字一起排版：图在上、下、左、右，对齐、间距、图案大小都能调。黑白分明的 logo 和剪影效果最好。
+
+![图案 + 文字](docs/images/picture_zh.png)
+
+## 滚轮压花
+
+空心圆筒滚轮，文字或图案一圈一圈铺满。上传无缝图案时会自动整排铺满，不会切掉半个。可调直径、长度、内孔、花纹深和每圈重复次数。竖着打。
+
+![滚轮](docs/images/roller_zh.png)
+
+## 切模（饼干 / 黏土耳环）
+
+外形可以跟随图案，也可以是圆形或方形。「饼干 / 黏土」一键切换尺寸。勾「内部压纹」，一压同时切形和压花。边沿贴平台打，不用支撑。
+
+![切模](docs/images/cutter_zh.png)
+
+## 下载的内容
+
+「下载 STL + 规格」会打包：STL、规格卡图片（印面和侧面同比例，mm / 英寸，附 10 mm 比例尺）、规格说明（含可直接贴到商品页的英文段落）、设置文件（以后「导入设置」能还原）。
+
+<img src="docs/images/spec_card_zh.png" width="400" alt="规格卡">
+
+## 功能一览
+
+- **印章**：方章、圆章（环形排字）、长条章；阳文 / 阴文；一体直筒手柄，可加手指凹槽
+- **字体**：中文简繁、英文、日文、韩文，也能上传自己的字体；缺字会提示；一键简繁转换
+- **打印前检查**：细笔画标黄、小空格标蓝、一键调整；数字超出安全范围会提示
+- **Bambu Studio**：选 A1 的工艺配置，显示会切成几层、字凸起实际多高
+- **尺寸**：外形、总高、文字区域、每个字的宽 × 高，到 0.01 mm
 
 ## 打印建议
 
-- 摆放：印面朝上，手柄底端贴平台
-- 字凸起 1.5 mm、底板 2.5 mm 是比较稳的起点；字很细时把「笔画加粗」调高一点
-- 不用加支撑
+- 印章印面朝上、滚轮竖着、切模边沿贴平台打，一般都不用支撑
 - 小章用英文时，Cinzel / Playfair 的细衬线容易细过喷嘴，Roboto Slab 或 Bebas Neue 更稳
 
 ## 修改代码
 
-源码在 `src/`：
+源码在 `src/`（`head.html` 样式、`body.html` 结构、`app.js` 逻辑、`geo.js` 网格），改完运行 `python3 build.py` 生成 `index.html`。测试见 `docs/测试计划.md` 和 `tests/`。外部依赖从 CDN 加载：three.js、earcut、opencc-js、Google Fonts。
 
-| 文件 | 内容 |
-| --- | --- |
-| `src/head.html` | 页面样式 |
-| `src/body.html` | 页面结构和控件 |
-| `src/app.js` | 排字、预览、手柄、导出等逻辑 |
-| `src/geo.js` | 轮廓提取和 STL 网格生成 |
-
-改完后运行 `python3 build.py`，会重新生成根目录的 `index.html`。
-
-外部依赖都从 CDN 加载：three.js（3D 预览）、earcut（三角化）、opencc-js（简繁转换，点按钮时才加载）、Google Fonts（字体）。
-
-## 许可证 / License
+## 许可证
 
 本项目使用 [PolyForm Noncommercial 1.0.0](LICENSE)：**个人和非商业用途免费**，可以使用、修改、分享。**商业用途需要另行授权**，比如用它做印章、滚轮、切模来卖，或者放进收费的产品或服务里。商用授权请通过 GitHub 联系 [gracege17](https://github.com/gracege17)。
 
-This project is licensed under [PolyForm Noncommercial 1.0.0](LICENSE): **free for personal and other noncommercial use**, including changing and sharing it. **Commercial use requires a separate license**, for example selling stamps, rollers or cutters made with it, or using it in a paid product or service. For a commercial license, contact [gracege17](https://github.com/gracege17) on GitHub.
-
-Copyright (c) 2026 gracege17
-
-第三方组件 / Third-party: three.js (MIT), earcut (ISC), opencc-js (Apache-2.0)，由 CDN 加载；字体来自 Google Fonts（SIL Open Font License）。
+Copyright (c) 2026 gracege17 · 第三方组件：three.js (MIT)、earcut (ISC)、opencc-js (Apache-2.0)；字体来自 Google Fonts（SIL Open Font License）。
