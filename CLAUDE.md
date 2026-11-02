@@ -34,4 +34,4 @@
 - 源码在 `src/`，改完运行 `python3 build.py` 生成 `index.html`。
 - 每次改动都要：检查 STL 是封闭的（无坏边）、没有悬空超过坡度上限。
 - 滚轮 / 切模的测试计划在 `docs/测试计划.md`，自动测试 `tests/qa_roller_cutter.py`（25 个用例）和 `tests/qa_ui.py`（7 项交互），改动后跑一遍。
-- 许可证：PolyForm Noncommercial 1.0.0（`LICENSE`），版权 gracege17。提交一律用 GitHub 隐私邮箱 `36457585+gracege17@users.noreply.github.com`，不要用真实邮箱。
+- 许可证：PolyForm Noncommercial 1.0.0（`LICENSE`），版权 gracege17。提交一律用 GitHub 隐私邮箱 `36457585+gracege17@users.noreply.github.com`，不要用真实邮箱；提交说明里不加 `Claude-Session:` 那一行（用户 2026-11-02 要求去掉）。
