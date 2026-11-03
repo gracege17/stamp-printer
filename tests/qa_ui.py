@@ -17,9 +17,10 @@ async def main():
         # U3 imprint toggle shows inset field
         await pg.check('#cutterImprint'); await pg.wait_for_timeout(2500); print('U3 imprint inset visible', await pg.is_visible('#imprintGap'))
         # U4 language switch on cutter
-        await pg.click('#langBtn'); await pg.wait_for_timeout(2500)
-        print('U4 EN tabs', await tabs(), '| cap', await pg.inner_text('.imp figcaption'), '| kpi', (await pg.inner_text('.kpis')).replace('\n',' ')[:60])
-        await pg.click('#langBtn'); await pg.wait_for_timeout(2000)
+        for lg in ['en', 'ja', 'ko']:
+            await pg.select_option('#langSel', lg); await pg.wait_for_timeout(2500)
+            print(f'U4 {lg} tabs', await tabs(), '| cap', await pg.inner_text('.imp figcaption'), '| kpi', (await pg.inner_text('.kpis')).replace('\n',' ')[:60])
+        await pg.select_option('#langSel', 'zh'); await pg.wait_for_timeout(2000)
         # U5 switch to roller and back to stamp: settings kept
         await pg.click('[data-k=product] [data-v=roller]'); await pg.wait_for_timeout(3000); print('U5 roller tabs', await tabs(), '| face tab label', await pg.inner_text('#tab-face'))
         await pg.click('[data-k=product] [data-v=stamp]'); await pg.wait_for_timeout(3000); print('U5 stamp tabs', await tabs(), '| face tab label', await pg.inner_text('#tab-face'), '| templates visible', await pg.is_visible('.subs'))

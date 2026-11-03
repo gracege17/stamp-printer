@@ -6,7 +6,7 @@
     <p class="sub">输入文字，下载 STL，直接切片。</p>
   </div>
   <div class="head-actions">
-    <button class="btn" id="langBtn" type="button" lang="">English</button>
+    <select class="btn" id="langSel" aria-label="Language"><option value="zh" lang="zh">中文</option><option value="en" lang="en">English</option><option value="ja" lang="ja">日本語</option><option value="ko" lang="ko">한국어</option></select>
     <button class="btn" id="impBtn">导入设置…</button>
     <input type="file" id="impFile" accept=".json,application/json" hidden>
   </div>
@@ -280,7 +280,7 @@
       </select></div></label>
       <p class="hint" id="slicerNote"></p>
       <label class="check"><input type="checkbox" id="mirror" data-k="mirror"> 镜像印面</label>
-      <p class="hint">印面朝上、手柄贴平台，不用支撑。</p>
+      <p class="hint" data-show="product=stamp">印面朝上、手柄贴平台，不用支撑。</p>
     </section>
 
   </div>

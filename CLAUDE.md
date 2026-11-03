@@ -28,7 +28,7 @@
 - Bambu Studio 配置 `slicer`：层高、首层、外墙线宽取自 Bambu Studio 的 resources/profiles/BBL/process；按它的切层规则（generate_object_layers）算字凸起打成几层；字顶收窄的台阶对齐层顶。
 - 滚轮（`product: 'roller'`）：空心圆筒，外面一圈花纹。一个图案按小印面画（`rollerTile`），铺成 n×m 展开图，按 2 mm 一条切开描轮廓再弯到圆柱上（`buildRoller`）；图案按整像素拼接（`placeTiles`），避免接缝。侧面默认直的；`rollerSlope` 打开时下沿做 45° 台阶免支撑。表面镜像。只用图案时「适应 / 铺满」；铺满 = 墙纸模式（`rollerWallpaper`）：保留整张图、不裁半个，行数取整（差 8% 内微调铺满，否则两端留空），上传时自动挑每圈个数（`bestWallpaperN`）。
 - 切模（`product: 'cutter'`）：饼干 / 黏土两套起始尺寸（`cutterKind`）；外形跟随图案（外扩 + 2 mm 内角圆角、填洞）或圆 / 方；边沿贴平台、刀口朝上；墙是一整块，里面笔直贴切线，外面从根部厚斜着收到刀口厚（`cutterWall`）；可选「内部压纹」（背板 + 图案凸棱，比刀口低 imprintGap）。
-- 国际版：右上角切换中文 / English（localStorage 'stamp-printer-lang'；没选过时按浏览器语言）。页面静态文字用 `I18N_EN`（中文原文 → 英文），新加 HTML 文字要同时加进去；JS 里用 `tl('中文', 'English')`（不能叫 L，handleRings 里有变量 L）。规格：中文界面中英双语，英文界面只有英文（`bi()`）。
+- 国际版：右上角下拉选 中文 / English / 日本語 / 한국어（`#langSel`，localStorage 'stamp-printer-lang'；没选过时按浏览器语言，其他语言用英文）。页面静态文字用 `I18N_EN` / `I18N_JA` / `I18N_KO`（中文原文 → 译文），新加 HTML 文字要同时加进三个表；JS 里用 `tl('中文', 'English', '日本語', '한국어')`（不能叫 L，handleRings 里有变量 L；日韩缺省时退回英文）。规格：中日韩界面是本地语言 + 英文双语，英文界面只有英文（`bi()`）。日韩译文是 AI 翻译，等母语用户校对。
 
 ## 代码
 - 源码在 `src/`，改完运行 `python3 build.py` 生成 `index.html`。

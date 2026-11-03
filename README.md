@@ -1,12 +1,12 @@
 # 印章打印器 · Stamp Maker
 
-**中文** · [English](README.en.md)
+**中文** · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
 输入文字或上传图案，直接生成可以 3D 打印的 **印章、滚轮压花、饼干 / 黏土切模** 的 STL，同时给出精确到 0.01 mm 的尺寸（附英寸）和规格卡。不用建模软件，下载后拖进切片软件就能打。
 
 ![印章打印器界面](docs/images/stamp_zh.png)
 
-**怎么打开：** 打开本仓库的 GitHub Pages 地址（Settings → Pages 里能看到）；或者下载 `index.html`，用浏览器直接打开。界面右上角可以切换中文 / English。
+**怎么打开：** 打开本仓库的 GitHub Pages 地址（Settings → Pages 里能看到）；或者下载 `index.html`，用浏览器直接打开。界面右上角可以切换语言（中文 / English / 日本語 / 한국어）。
 
 ## 三步做一个章
 

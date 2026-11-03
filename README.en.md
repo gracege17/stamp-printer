@@ -1,12 +1,12 @@
 # Stamp Maker · 印章打印器
 
-[中文](README.md) · **English**
+[中文](README.md) · **English** · [日本語](README.ja.md) · [한국어](README.ko.md)
 
 Type some text or upload a picture and get a 3D-printable STL for a **stamp, an embossing roller or a cookie / clay cutter**, with sizes to 0.01 mm (plus inches) and a spec card. No modelling software needed: download the file and drop it into your slicer.
 
 ![Stamp Maker](docs/images/stamp_en.png)
 
-**How to open it:** use this repository's GitHub Pages link (shown under Settings → Pages), or download `index.html` and open it in a browser. Switch between English and 中文 at the top right.
+**How to open it:** use this repository's GitHub Pages link (shown under Settings → Pages), or download `index.html` and open it in a browser. Pick the language (中文 / English / 日本語 / 한국어) at the top right.
 
 ## Make a stamp in three steps
 

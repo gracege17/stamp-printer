@@ -101,6 +101,9 @@ textarea:focus,input.txt:focus{border-color:var(--cinnabar);box-shadow:0 0 0 3px
 .more summary{cursor:pointer;font-size:13px;color:var(--muted)}
 .more summary:focus-visible{outline:2px solid var(--cinnabar);outline-offset:2px}
 .more-body{display:flex;flex-direction:column;gap:12px;padding-top:10px}
+html:lang(ja){--f-display:"Noto Serif JP","Hiragino Mincho ProN",serif;--f-body:"Noto Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif}
+html:lang(ko){--f-display:"Noto Serif KR",serif;--f-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+select#langSel{width:auto;padding-right:8px}
 .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-size:13px;padding:7px 12px;border-radius:8px;cursor:pointer}
 .btn:hover{border-color:var(--muted)}
 .btn.primary{background:var(--cinnabar);border-color:var(--cinnabar);color:var(--cinnabar-ink);font-weight:700;font-size:15px;padding:11px 18px}

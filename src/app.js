@@ -1,17 +1,21 @@
 (() => {
 const $ = s => document.querySelector(s);
 const STORE = 'stamp-printer-v1', LANG_KEY = 'stamp-printer-lang';
-// Interface language: what the visitor picked before, else Chinese for a Chinese browser and English for everyone else.
-let LANG = (() => { try { const v = localStorage.getItem(LANG_KEY); if (v === 'zh' || v === 'en') return v; } catch (e) {} return /^zh/i.test(navigator.language || '') ? 'zh' : 'en'; })();
-const tl = (zh, en) => LANG === 'en' ? en : zh;
+// Interface language: what the visitor picked before, else the browser language (Chinese, Japanese, Korean), else English.
+const LANGS = ['zh', 'en', 'ja', 'ko'];
+let LANG = (() => { try { const v = localStorage.getItem(LANG_KEY); if (LANGS.includes(v)) return v; } catch (e) {} const m = /^(zh|ja|ko)/i.exec(navigator.language || ''); return m ? m[1].toLowerCase() : 'en'; })();
+// tl(Chinese, English, Japanese, Korean): Japanese / Korean fall back to English when missing.
+const tl = (zh, en, ja, ko) => LANG === 'zh' ? zh : LANG === 'ja' && ja != null ? ja : LANG === 'ko' && ko != null ? ko : en;
 const pl = (n, one, many) => n === 1 ? one : many;
 
 const EN0 = LANG === 'en';   // first-visit sample text and font follow the interface language
+const SAMPLE = { zh: ['陈氏/之印', 'v', '山间手作工作室', '印', '欢迎光临', 'Noto Sans SC'], en: ['Thank/You', 'h', 'HANDMADE WITH LOVE', 'A', 'EST. 2026', 'Roboto Slab'],
+  ja: ['山田', 'v', 'てづくりの店', '印', 'ようこそ', 'Noto Sans JP'], ko: ['김하나', 'v', '손으로 만든 공방', '★', '어서 오세요', 'Noto Sans KR'] }[LANG];
 const DEF = {
   shape: 'square', w: 20, h: 12, corner: 1, border: 1.2, mode: 'yang', layout: 'ring',
-  text: EN0 ? 'Thank/You' : '陈氏/之印', dir: EN0 ? 'h' : 'v', gap: 0.4, pad: 0.6,
-  ringText: EN0 ? 'HANDMADE WITH LOVE' : '山间手作工作室', ringH: 6, ringSpan: 220, center: 'star', centerSize: 11, centerText: EN0 ? 'A' : '印', bottomText: EN0 ? 'EST. 2026' : '欢迎光临', bottomH: 5, bottomY: 9,
-  font: EN0 ? 'Roboto Slab' : 'Noto Sans SC', weight: 700, stretch: 1.2, thicken: 0,
+  text: SAMPLE[0], dir: SAMPLE[1], gap: 0.4, pad: 0.6,
+  ringText: SAMPLE[2], ringH: 6, ringSpan: 220, center: 'star', centerSize: 11, centerText: SAMPLE[3], bottomText: SAMPLE[4], bottomH: 5, bottomY: 9,
+  font: SAMPLE[5], weight: 700, stretch: 1.2, thicken: 0,
   reliefH: 1.5, baseT: 2.5, margin: 1, mirror: true, ppm: 10,
   handle: 'grip', handleH: 30, gripD: 16, gripShape: 'round', trans: 'straight', maxAngle: 35, bulge: 0, chamfer: 0.6, groove: 'long', grooveD: 2, grooveW: 100, grooveShape: 'arc', neckH: 3, handlePad: 0.5, nozzle: 0.4, topInset: 0.15, imgMode: 'none', imgThreshold: 128, imgInvert: false, imgSize: 0.45, imgPos: 'top', imgGap: 1, imgFit: 'fit', imgScale: 1, imgAlign: 'center', slicer: 'a1-0.2-010', product: 'stamp', rollerD: 45, rollerL: 100, rollerHole: 30, rollerN: 2, rollerM: 2, rollerGap: 4, rollerEnd: 3, rollerSlope: false,
   cutterKind: 'cookie', cutterShape: 'follow', cutterW: 60, cutterH: 60, cutterOffset: 3, cutterHeight: 12, bladeT: 0.8, wallT: 1.6, flangeW: 4, flangeT: 2, cutterImprint: false, imprintGap: 2, _v: 2
@@ -23,8 +27,8 @@ const PRESETS = {
   roller: { product: 'roller', mode: 'yang', dir: 'h' }
 };
 const FONTS = [
-  { id: 'Noto Serif SC', name: '思源宋体', en: 'Source Han Serif SC', weights: [400, 700, 900], lang: 'zh' },
-  { id: 'Noto Sans SC', name: '思源黑体', en: 'Source Han Sans SC', weights: [400, 700, 900], lang: 'zh' },
+  { id: 'Noto Serif SC', name: '思源宋体', en: 'Source Han Serif SC', ja: '源ノ明朝 SC', ko: '본명조 SC', weights: [400, 700, 900], lang: 'zh' },
+  { id: 'Noto Sans SC', name: '思源黑体', en: 'Source Han Sans SC', ja: '源ノ角ゴシック SC', ko: '본고딕 SC', weights: [400, 700, 900], lang: 'zh' },
   { id: 'ZCOOL QingKe HuangYou', name: '庆科黄油体（方块感）', en: 'ZCOOL QingKe HuangYou (blocky)', lang: 'zh' },
   { id: 'Ma Shan Zheng', name: '马善政楷书', en: 'Ma Shan Zheng (brush)', lang: 'zh' },
   { id: 'ZCOOL XiaoWei', name: '站酷小薇', en: 'ZCOOL XiaoWei', lang: 'zh' },
@@ -37,20 +41,21 @@ const FONTS = [
   { id: 'Oswald', name: 'Oswald（窄黑体）', en: 'Oswald (condensed sans)', weights: [400, 700], lang: 'en' },
   { id: 'Bebas Neue', name: 'Bebas Neue（窄大写）', en: 'Bebas Neue (condensed caps)', lang: 'en' },
   { id: 'Pacifico', name: 'Pacifico（手写）', en: 'Pacifico (script)', lang: 'en' },
-  { id: 'Noto Serif TC', name: '思源宋体 繁体', en: 'Source Han Serif TC', weights: [400, 700, 900], lang: 'tc' },
-  { id: 'Noto Sans TC', name: '思源黑体 繁体', en: 'Source Han Sans TC', weights: [400, 700, 900], lang: 'tc' },
+  { id: 'Noto Serif TC', name: '思源宋体 繁体', en: 'Source Han Serif TC', ja: '源ノ明朝 TC', ko: '본명조 TC', weights: [400, 700, 900], lang: 'tc' },
+  { id: 'Noto Sans TC', name: '思源黑体 繁体', en: 'Source Han Sans TC', ja: '源ノ角ゴシック TC', ko: '본고딕 TC', weights: [400, 700, 900], lang: 'tc' },
   { id: 'LXGW WenKai TC', name: '霞鹜文楷 繁体', en: 'LXGW WenKai TC', weights: [400, 700], lang: 'tc' },
-  { id: 'Noto Serif JP', name: '思源明朝 日文', en: 'Source Han Serif JP', weights: [400, 700, 900], lang: 'ja' },
-  { id: 'Noto Sans JP', name: '思源黑体 日文', en: 'Source Han Sans JP', weights: [400, 700, 900], lang: 'ja' },
-  { id: 'Yuji Syuku', name: '佑字 毛笔（日文）', en: 'Yuji Syuku (brush, JP)', lang: 'ja' },
-  { id: 'Noto Serif KR', name: '思源明朝 韩文', en: 'Source Han Serif KR', weights: [400, 700, 900], lang: 'ko' },
-  { id: 'Noto Sans KR', name: '思源黑体 韩文', en: 'Source Han Sans KR', weights: [400, 700, 900], lang: 'ko' },
-  { id: 'Song Myung', name: '宋明体（韩文）', en: 'Song Myung (KR)', lang: 'ko' },
-  { id: 'Gowun Batang', name: 'Gowun 明朝（韩文）', en: 'Gowun Batang (KR)', weights: [400, 700], lang: 'ko' }
+  { id: 'Noto Serif JP', name: '思源明朝 日文', en: 'Source Han Serif JP', ja: '源ノ明朝', ko: '본명조 JP', weights: [400, 700, 900], lang: 'ja' },
+  { id: 'Noto Sans JP', name: '思源黑体 日文', en: 'Source Han Sans JP', ja: '源ノ角ゴシック', ko: '본고딕 JP', weights: [400, 700, 900], lang: 'ja' },
+  { id: 'Yuji Syuku', name: '佑字 毛笔（日文）', en: 'Yuji Syuku (brush, JP)', ja: '佑字 肅（毛筆）', lang: 'ja' },
+  { id: 'Noto Serif KR', name: '思源明朝 韩文', en: 'Source Han Serif KR', ja: '源ノ明朝 KR', ko: '본명조', weights: [400, 700, 900], lang: 'ko' },
+  { id: 'Noto Sans KR', name: '思源黑体 韩文', en: 'Source Han Sans KR', ja: '源ノ角ゴシック KR', ko: '본고딕', weights: [400, 700, 900], lang: 'ko' },
+  { id: 'Song Myung', name: '宋明体（韩文）', en: 'Song Myung (KR)', ko: '송명', lang: 'ko' },
+  { id: 'Gowun Batang', name: 'Gowun 明朝（韩文）', en: 'Gowun Batang (KR)', ko: '고운바탕', weights: [400, 700], lang: 'ko' }
 ];
-const LANG_NAME_ZH = { zh: '中文', tc: '中文繁体', en: '英文', ja: '日文', ko: '韩文' }, LANG_NAME_EN = { zh: 'Chinese', tc: 'Traditional Chinese', en: 'English', ja: 'Japanese', ko: 'Korean' };
-const langName = l => (LANG === 'en' ? LANG_NAME_EN : LANG_NAME_ZH)[l];
-const fontLabel = f => (LANG === 'en' ? (f.en || f.name) : f.name).replace(/（[^）]*）|\s*\([^)]*\)/g, '');
+const LANG_NAMES = { zh: { zh: '中文', tc: '中文繁体', en: '英文', ja: '日文', ko: '韩文' }, en: { zh: 'Chinese', tc: 'Traditional Chinese', en: 'English', ja: 'Japanese', ko: 'Korean' },
+  ja: { zh: '中国語', tc: '中国語（繁体）', en: '英語', ja: '日本語', ko: '韓国語' }, ko: { zh: '중국어', tc: '중국어 번체', en: '영어', ja: '일본어', ko: '한국어' } };
+const langName = l => LANG_NAMES[LANG][l];
+const fontLabel = f => (LANG === 'zh' ? f.name : f[LANG] || f.en || f.name).replace(/（[^）]*）|\s*\([^)]*\)/g, '');
 let glyphLog = null;
 let customFonts = []; // {id, family, name}
 
@@ -77,7 +82,8 @@ const LIMIT_EN = { w: 'Size', h: 'Height', corner: 'Corner radius', border: 'Bor
   handleH: 'Handle height', gripD: 'Grip width', maxAngle: 'Max slope', bulge: 'Waist', chamfer: 'Bottom chamfer', grooveD: 'Groove depth', grooveW: 'Groove width', neckH: 'Collar', handlePad: 'Handle offset', nozzle: 'Nozzle',
   rollerD: 'Roller diameter', rollerL: 'Roller length', rollerHole: 'Hole diameter', rollerN: 'Repeats around', rollerM: 'Repeats along', rollerGap: 'Pattern gap', rollerEnd: 'End margin',
   cutterW: 'Design width', cutterH: 'Design height', cutterOffset: 'Outline offset', cutterHeight: 'Cutter height', bladeT: 'Blade', wallT: 'Wall base', flangeW: 'Rim width', flangeT: 'Rim thickness', imprintGap: 'Imprint inset' };
-const limName = k => tl(LIMITS[k][2], LIMIT_EN[k]);
+const LIMIT_JA = {"w": "サイズ", "h": "高さ", "corner": "角の丸み", "border": "枠の太さ", "pad": "余白", "gap": "字間", "ringH": "リング文字の高さ", "ringSpan": "リングの角度", "centerSize": "中央のサイズ", "bottomH": "下の文字の高さ", "bottomY": "下へ移動", "stretch": "縦長", "thicken": "太らせる", "reliefH": "凸の高さ", "topInset": "先端を細く", "imgThreshold": "しきい値", "imgSize": "画像サイズ", "imgGap": "間隔", "imgScale": "画像サイズ", "baseT": "台座の厚さ", "margin": "外側の余白", "handleH": "持ち手の高さ", "gripD": "持ち手の幅", "maxAngle": "最大傾斜", "bulge": "くびれ", "chamfer": "底の面取り", "grooveD": "溝の深さ", "grooveW": "溝の幅", "neckH": "ストレート部", "handlePad": "持ち手の張り出し", "nozzle": "ノズル径", "rollerD": "ローラーの直径", "rollerL": "ローラーの長さ", "rollerHole": "穴の直径", "rollerN": "1 周の繰り返し", "rollerM": "長さ方向の繰り返し", "rollerGap": "模様の間隔", "rollerEnd": "両端の余白", "cutterW": "図柄の幅", "cutterH": "図柄の高さ", "cutterOffset": "外形の広げ幅", "cutterHeight": "抜き型の高さ", "bladeT": "刃先", "wallT": "根元", "flangeW": "ツバの幅", "flangeT": "ツバの厚さ", "imprintGap": "型押しの深さ"}, LIMIT_KO = {"w": "크기", "h": "높이", "corner": "모서리 둥글기", "border": "테두리", "pad": "여백", "gap": "자간", "ringH": "둥근 글자 높이", "ringSpan": "둥근 글자 각도", "centerSize": "가운데 크기", "bottomH": "아래 글자 높이", "bottomY": "아래로 이동", "stretch": "늘이기", "thicken": "굵게 +", "reliefH": "돌출 높이", "topInset": "윗면 좁히기", "imgThreshold": "임계값", "imgSize": "이미지 크기", "imgGap": "간격", "imgScale": "이미지 크기", "baseT": "받침판 두께", "margin": "바깥 여백", "handleH": "손잡이 높이", "gripD": "손잡이 폭", "maxAngle": "최대 경사", "bulge": "허리", "chamfer": "아래 모따기", "grooveD": "홈 깊이", "grooveW": "홈 너비", "neckH": "직선부", "handlePad": "손잡이 확장", "nozzle": "노즐", "rollerD": "롤러 지름", "rollerL": "롤러 길이", "rollerHole": "구멍 지름", "rollerN": "둘레 반복", "rollerM": "길이 반복", "rollerGap": "무늬 간격", "rollerEnd": "양끝 여백", "cutterW": "디자인 너비", "cutterH": "디자인 높이", "cutterOffset": "외형 확장", "cutterHeight": "커터 높이", "bladeT": "칼날", "wallT": "밑동", "flangeW": "받침 폭", "flangeT": "받침 두께", "imprintGap": "압인 간격"};
+const limName = k => tl(LIMITS[k][2], LIMIT_EN[k], LIMIT_JA[k], LIMIT_KO[k]);
 // Safe ranges for every number. Typed values outside them are generated at the nearest limit, with a note.
 const LIMITS = {
   w: [5, 150, '尺寸'], h: [5, 150, '高'], corner: [0, 30, '圆角'], border: [0, 10, '边框粗'], pad: [0, 20, '内边距'], gap: [0, 10, '字间距'],
@@ -95,7 +101,7 @@ function grooveAxis(s) {
   const { fw, fh } = faceDims(s), horiz = fw > fh + 0.01;           // a wide stamp's long sides face front/back (y)
   return g === 'long' ? (horiz ? 'y' : 'x') : (horiz ? 'x' : 'y');
 }
-const grooveLabel = s => ({ long: isRect(s) ? tl('长边', 'long sides') : tl('左右', 'left & right'), short: isRect(s) ? tl('短边', 'short sides') : tl('前后', 'front & back'), xy: tl('四面', 'all four sides') })[s.groove];
+const grooveLabel = s => ({ long: isRect(s) ? tl('长边', 'long sides', '長辺', '긴 변') : tl('左右', 'left & right', '左右', '좌우'), short: isRect(s) ? tl('短边', 'short sides', '短辺', '짧은 변') : tl('前后', 'front & back', '前後', '앞뒤'), xy: tl('四面', 'all four sides', '四面', '네 면') })[s.groove];
 function sane(s0) {
   const s = { ...s0 }, W = new Map();
   const warns = { push: (m, k = m) => W.set(k, m) };
@@ -104,21 +110,21 @@ function sane(s0) {
   for (const k of Object.keys(LIMITS)) {
     if (grip && k === 'baseT') continue;
     const v = +s[k]; if (!isFinite(v)) { s[k] = DEF[k]; continue; }
-    const c = clampTo(k, v); if (c !== v) { s[k] = c; warns.push(tl(`「${limName(k)}」超出范围，已按 ${c} 生成`, `${limName(k)} is out of range; used ${c}`), k); }
+    const c = clampTo(k, v); if (c !== v) { s[k] = c; warns.push(tl(`「${limName(k)}」超出范围，已按 ${c} 生成`, `${limName(k)} is out of range; used ${c}`, `「${limName(k)}」が範囲外のため ${c} にしました`, `‘${limName(k)}’ 값이 범위를 벗어나 ${c}(으)로 만들었습니다`), k); }
   }
   s.ppm = [6, 10, 16].includes(+s.ppm) ? +s.ppm : 10;
   if (grip) {
     s.baseT = 0;
-    if (s.neckH < 0.6) { s.neckH = 0.6; warns.push(tl('「直段」最少 0.6 mm，已按 0.6 生成', 'Collar must be at least 0.6 mm; used 0.6'), 'neckH'); }
+    if (s.neckH < 0.6) { s.neckH = 0.6; warns.push(tl('「直段」最少 0.6 mm，已按 0.6 生成', 'Collar must be at least 0.6 mm; used 0.6', 'ストレート部は 0.6 mm 以上必要なので 0.6 にしました', '직선부는 0.6 mm 이상이어야 해서 0.6으로 만들었습니다'), 'neckH'); }
   }
   const { fw, fh } = faceDims(eff(s)), min = Math.min(fw, fh);
-  if (s.border > min * 0.25) { s.border = +(min * 0.25).toFixed(1); warns.push(tl(`边框太粗，已按 ${s.border} mm 生成`, `Border too thick; used ${s.border} mm`), 'border'); }
+  if (s.border > min * 0.25) { s.border = +(min * 0.25).toFixed(1); warns.push(tl(`边框太粗，已按 ${s.border} mm 生成`, `Border too thick; used ${s.border} mm`, `枠が太すぎるため ${s.border} mm にしました`, `테두리가 너무 두꺼워 ${s.border} mm로 만들었습니다`), 'border'); }
   if (s.shape !== 'circle' && s.corner > min / 2) s.corner = min / 2;
-  if (2 * (s.border + s.pad) > min * 0.85) { s.pad = Math.max(0, +(min * 0.425 - s.border).toFixed(1)); warns.push(tl(`内边距太大，已按 ${s.pad} mm 生成`, `Padding too large; used ${s.pad} mm`), 'pad'); }
+  if (2 * (s.border + s.pad) > min * 0.85) { s.pad = Math.max(0, +(min * 0.425 - s.border).toFixed(1)); warns.push(tl(`内边距太大，已按 ${s.pad} mm 生成`, `Padding too large; used ${s.pad} mm`, `余白が大きすぎるため ${s.pad} mm にしました`, `여백이 너무 커서 ${s.pad} mm로 만들었습니다`), 'pad'); }
   const gMax = +((min + 2 * s.margin) * 0.25).toFixed(1);
-  if (s.product === 'cutter' && s.bladeT > s.wallT) { s.bladeT = s.wallT; warns.push(tl(`刀口不能比根部厚，已按 ${s.bladeT} mm 生成`, `The blade can’t be thicker than the wall base; used ${s.bladeT} mm`), 'bladeT'); }
-  if (s.product === 'roller' && s.rollerHole > s.rollerD - 4) { s.rollerHole = Math.max(0, +(s.rollerD - 4).toFixed(1)); warns.push(tl(`内孔太大，壁至少 2 mm，已按 Ø${s.rollerHole} 生成`, `Hole too big (wall must be at least 2 mm); used Ø${s.rollerHole}`), 'rollerHole'); }
-  if (s.handle === 'grip' && s.groove !== 'none' && s.grooveD > gMax) { s.grooveD = gMax; warns.push(tl(`凹槽最深是印面宽的 1/4，已按 ${gMax} mm 生成`, `Groove depth is at most 1/4 of the face; used ${gMax} mm`), 'grooveD'); }
+  if (s.product === 'cutter' && s.bladeT > s.wallT) { s.bladeT = s.wallT; warns.push(tl(`刀口不能比根部厚，已按 ${s.bladeT} mm 生成`, `The blade can’t be thicker than the wall base; used ${s.bladeT} mm`, `刃先は根元より厚くできないため ${s.bladeT} mm にしました`, `칼날은 밑동보다 두꺼울 수 없어 ${s.bladeT} mm로 만들었습니다`), 'bladeT'); }
+  if (s.product === 'roller' && s.rollerHole > s.rollerD - 4) { s.rollerHole = Math.max(0, +(s.rollerD - 4).toFixed(1)); warns.push(tl(`内孔太大，壁至少 2 mm，已按 Ø${s.rollerHole} 生成`, `Hole too big (wall must be at least 2 mm); used Ø${s.rollerHole}`, `穴が大きすぎます（壁は 2 mm 以上必要）。Ø${s.rollerHole} にしました`, `구멍이 너무 큽니다(벽은 2 mm 이상 필요). Ø${s.rollerHole}(으)로 만들었습니다`), 'rollerHole'); }
+  if (s.handle === 'grip' && s.groove !== 'none' && s.grooveD > gMax) { s.grooveD = gMax; warns.push(tl(`凹槽最深是印面宽的 1/4，已按 ${gMax} mm 生成`, `Groove depth is at most 1/4 of the face; used ${gMax} mm`, `溝の深さは印面の幅の 1/4 までなので ${gMax} mm にしました`, `홈 깊이는 인면 폭의 1/4까지라서 ${gMax} mm로 만들었습니다`), 'grooveD'); }
   s.grooveAxis = grooveAxis(s);
   return { s, warns: [...W.values()] };
 }
@@ -161,13 +167,13 @@ function drawImageCover(ctx, im, x, y, w, h) {
   if (!im || !im.mask || w <= 0 || h <= 0) return;
   const iw = im.mask.width, ih = im.mask.height, k = Math.max(w / iw, h / ih), sw = w / k, sh = h / k;
   ctx.save(); ctx.imageSmoothingQuality = 'high'; ctx.drawImage(im.mask, (iw - sw) / 2, (ih - sh) / 2, sw, sh, x, y, w, h); ctx.restore();
-  if (glyphLog) glyphLog.push({ ch: tl('图案', 'Picture'), w, h });
+  if (glyphLog) glyphLog.push({ ch: tl('图案', 'Picture', '画像', '이미지'), w, h });
 }
 function drawImageFit(ctx, im, x, y, w, h) {
   if (!im || !im.mask || w <= 0 || h <= 0) return;
   let dw = w, dh = w / im.aspect; if (dh > h) { dh = h; dw = h * im.aspect; }
   ctx.save(); ctx.imageSmoothingQuality = 'high'; ctx.drawImage(im.mask, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh); ctx.restore();
-  if (glyphLog) glyphLog.push({ ch: tl('图案', 'Picture'), w: dw, h: dh });
+  if (glyphLog) glyphLog.push({ ch: tl('图案', 'Picture', '画像', '이미지'), w: dw, h: dh });
 }
 // Load a picture (PNG / JPG / WebP / SVG) into a source canvas at most 1600 px on its long side.
 function loadImageURL(url) {
@@ -179,11 +185,11 @@ function loadImageURL(url) {
       const c = canvas(Math.round(w), Math.round(h)), x = c.getContext('2d', { willReadFrequently: true });
       x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); res(c);
     };
-    im.onerror = () => rej(new Error(tl('读不了这张图片', 'Could not read this picture')));
+    im.onerror = () => rej(new Error(tl('读不了这张图片', 'Could not read this picture', 'この画像を読み込めませんでした', '이 이미지를 읽을 수 없습니다')));
     im.src = url;
   });
 }
-function setImage(c, name) { imgSrc = c; imgName = name || tl('图案', 'picture'); imgCache = { key: '' }; }
+function setImage(c, name) { imgSrc = c; imgName = name || tl('图案', 'picture', '画像', '이미지'); imgCache = { key: '' }; }
 const imgDataURL = () => imgSrc ? imgSrc.toDataURL('image/png') : null;
 
 /* ---------- drawing the stamp face (unmirrored, as the impression) ---------- */
@@ -380,7 +386,7 @@ function makeMask(s0) {
   const im = s.imgMode !== 'none' ? imgMask(invOnly ? { ...s, imgInvert: false } : s) : null;
   if (im && s.imgMode === 'only') {
     const b = innerBox(s, fw, fh);
-    if (s.product === 'roller' && s.imgFit === 'fill') { tt.save(); tt.imageSmoothingQuality = 'high'; tt.drawImage(im.mask, b.x, b.y, b.w, b.h); tt.restore(); if (glyphLog) glyphLog.push({ ch: tl('图案', 'Picture'), w: b.w, h: b.h }); }
+    if (s.product === 'roller' && s.imgFit === 'fill') { tt.save(); tt.imageSmoothingQuality = 'high'; tt.drawImage(im.mask, b.x, b.y, b.w, b.h); tt.restore(); if (glyphLog) glyphLog.push({ ch: tl('图案', 'Picture', '画像', '이미지'), w: b.w, h: b.h }); }
     else { const k = Math.min(1, Math.max(0.2, +s.imgScale || 1)), w = b.w * k, h = b.h * k; drawImageFit(tt, im, b.x + (b.w - w) / 2, b.y + (b.h - h) / 2, w, h); }
   }
   else if (s.layout === 'ring') drawRing(tt, s, fw, im);
@@ -522,10 +528,10 @@ function handleRings(s, basePoly, bw, bh, wrapD = 0, collarPoly = null, wrap = f
   const hf = D < 0.01 ? 0 : s.trans === 'arc' ? 2 * D / tanA : s.trans === 'line' ? D / tanA : 0;
   const neck = Math.max(0, +s.neckH || 0);
   let L = Lin - hc - hf - neck;
-  if (L < 1) { L = 1; notes.push(tl(`手柄最短要 ${Math.ceil(hc + hf + neck + 1)} mm，已按这个长度生成`, `Handle must be at least ${Math.ceil(hc + hf + neck + 1)} mm; used that`)); }
+  if (L < 1) { L = 1; notes.push(tl(`手柄最短要 ${Math.ceil(hc + hf + neck + 1)} mm，已按这个长度生成`, `Handle must be at least ${Math.ceil(hc + hf + neck + 1)} mm; used that`, `持ち手は ${Math.ceil(hc + hf + neck + 1)} mm 以上必要なので、その長さにしました`, `손잡이는 ${Math.ceil(hc + hf + neck + 1)} mm 이상이어야 해서 그 길이로 만들었습니다`)); }
   let b = +s.bulge || 0; const bMax = L * tanA / Math.PI;
-  if (Math.abs(b) > bMax) { b = Math.sign(b) * bMax; notes.push(tl(`腰身已限制到 ${Math.abs(b).toFixed(1)} mm（再大会超过 ${deg}° 悬空）`, `Waist limited to ${Math.abs(b).toFixed(1)} mm (more would overhang past ${deg}°)`)); }
-  if (rGmin + b < 2) { b = 2 - rGmin; notes.push(tl('腰身收得太细，已自动减小', 'Waist was too thin; reduced')); }
+  if (Math.abs(b) > bMax) { b = Math.sign(b) * bMax; notes.push(tl(`腰身已限制到 ${Math.abs(b).toFixed(1)} mm（再大会超过 ${deg}° 悬空）`, `Waist limited to ${Math.abs(b).toFixed(1)} mm (more would overhang past ${deg}°)`, `くびれを ${Math.abs(b).toFixed(1)} mm までにしました（それ以上は ${deg}° を超えるオーバーハング）`, `허리를 ${Math.abs(b).toFixed(1)} mm까지로 했습니다(더 하면 ${deg}°를 넘는 오버행)`)); }
+  if (rGmin + b < 2) { b = 2 - rGmin; notes.push(tl('腰身收得太细，已自动减小', 'Waist was too thin; reduced', 'くびれが細すぎたので弱めました', '허리가 너무 가늘어 줄였습니다')); }
   // 两侧凹槽：手指捏的位置往里凹一道弧，到印面前按坡度上限收平。
   const sides = s.grooveAxis || 'none', ext = Math.min(...rG) * 2;
   // Groove arc seen from above: 凹槽宽度 = share of the side it spans; 圆弧 = crisp ends, 柔和 = ends blend into the side.
@@ -534,8 +540,8 @@ function handleRings(s, basePoly, bw, bh, wrapD = 0, collarPoly = null, wrap = f
   let gd2 = sides === 'none' ? 0 : Math.max(0, +s.grooveD || 0);
   if (wrap) gd2 = wrapD; // widened straight handle: full-depth grooves top to bottom, no fade
   else {
-    if (gd2 > ext * 0.3) { gd2 = ext * 0.3; notes.push(tl(`凹槽深度已限制到 ${gd2.toFixed(1)} mm（再深手柄太薄）`, `Groove depth limited to ${gd2.toFixed(1)} mm (handle would get too thin)`)); }
-    if (gd2 / tanA > L * 0.8) { gd2 = L * 0.8 * tanA; notes.push(tl(`手柄太短，凹槽深度已限制到 ${gd2.toFixed(1)} mm`, `Handle is short; groove depth limited to ${gd2.toFixed(1)} mm`)); }
+    if (gd2 > ext * 0.3) { gd2 = ext * 0.3; notes.push(tl(`凹槽深度已限制到 ${gd2.toFixed(1)} mm（再深手柄太薄）`, `Groove depth limited to ${gd2.toFixed(1)} mm (handle would get too thin)`, `溝の深さを ${gd2.toFixed(1)} mm までにしました（それ以上は持ち手が薄くなりすぎます）`, `홈 깊이를 ${gd2.toFixed(1)} mm까지로 했습니다(더 깊으면 손잡이가 너무 얇아짐)`)); }
+    if (gd2 / tanA > L * 0.8) { gd2 = L * 0.8 * tanA; notes.push(tl(`手柄太短，凹槽深度已限制到 ${gd2.toFixed(1)} mm`, `Handle is short; groove depth limited to ${gd2.toFixed(1)} mm`, `持ち手が短いため、溝の深さを ${gd2.toFixed(1)} mm までにしました`, `손잡이가 짧아 홈 깊이를 ${gd2.toFixed(1)} mm까지로 했습니다`)); }
   }
   const zg = hc + L, ft = gd2 / tanA;
   const grooveAt = zz => gd2 <= 0 ? 0 : wrap ? gd2 : gd2 * Math.min(1, Math.max(0, (zg - zz) / ft));
@@ -565,7 +571,7 @@ function handleRings(s, basePoly, bw, bh, wrapD = 0, collarPoly = null, wrap = f
   if (wrap) rings.push(ring(rC, z));
   z += neck;
   rings.push(ring(rC, z + s.baseT));
-  if (s.trans === 'step' && D > 0.3) notes.push(tl('直角过渡需要加支撑', 'Stepped transition needs supports'));
+  if (s.trans === 'step' && D > 0.3) notes.push(tl('直角过渡需要加支撑', 'Stepped transition needs supports', '段差のある形はサポートが必要です', '계단형 연결부는 서포트가 필요합니다'));
   const mid = rings[Math.floor(rings.length * 0.3)];
   return { rings, zb: z + s.baseT, notes, flareH: hf, handleLen: z, neck, section: mid ? mid.poly : null, collar: ang.map((a2, i) => [rC[i] * Math.cos(a2), rC[i] * Math.sin(a2)]) };
 }
@@ -802,11 +808,11 @@ function fillFontSelect() {
   const sel = $('#font');
   const opt = f => `<option value="${f.id}">${fontLabel(f).replace(/[<&]/g, '')}</option>`;
   sel.innerHTML = ['zh', 'tc', 'en', 'ja', 'ko'].map(l => `<optgroup label="${langName(l)}">${FONTS.filter(f => f.lang === l).map(opt).join('')}</optgroup>`).join('')
-    + (customFonts.length ? `<optgroup label="${tl('我上传的', 'Uploaded')}">${customFonts.map(opt).join('')}</optgroup>` : '');
+    + (customFonts.length ? `<optgroup label="${tl('我上传的', 'Uploaded', 'アップロード', '업로드')}">${customFonts.map(opt).join('')}</optgroup>` : '');
   if (![...FONTS, ...customFonts].some(f => f.id === S.font)) S.font = FONTS[0].id;
   sel.value = S.font; fillWeights();
 }
-const weightName = w => w === 900 ? tl('特粗', 'Black') : w === 700 ? tl('粗', 'Bold') : tl('常规', 'Regular');
+const weightName = w => w === 900 ? tl('特粗', 'Black', '極太', '아주 굵게') : w === 700 ? tl('粗', 'Bold', '太字', '굵게') : tl('常规', 'Regular', '標準', '보통');
 function fillWeights() {
   const f = fontInfo(S.font), sel = $('#weight');
   if (f.weights) { sel.innerHTML = f.weights.map(w => `<option value="${w}">${weightName(w)}</option>`).join(''); if (!f.weights.includes(+S.weight)) S.weight = f.weights[f.weights.length - 1]; sel.value = S.weight; }
@@ -822,22 +828,22 @@ function syncUI() {
   });
   const IX = 'M9 5h22q-5 12 0 24H9q5-12 0-24z', IY = 'M9 5q11 5 22 0v24q-11-5-22 0z', ax = grooveAxis({ ...S, groove: 'long' });
   const gl = $('[data-k=groove] [data-v=long]'), gs = $('[data-k=groove] [data-v=short]');
-  gl.querySelector('span').textContent = isRect(S) ? tl('长边', 'Long') : tl('左右', 'Sides'); gs.querySelector('span').textContent = isRect(S) ? tl('短边', 'Short') : tl('前后', 'Ends');
+  gl.querySelector('span').textContent = isRect(S) ? tl('长边', 'Long', '長辺', '긴 변') : tl('左右', 'Sides', '左右', '좌우'); gs.querySelector('span').textContent = isRect(S) ? tl('短边', 'Short', '短辺', '짧은 변') : tl('前后', 'Ends', '前後', '앞뒤');
   gl.querySelector('path').setAttribute('d', ax === 'x' ? IX : IY); gs.querySelector('path').setAttribute('d', ax === 'x' ? IY : IX);
   // Highlight the template that matches the current shape (方形 → 姓名方章, 圆形 → 圆形店章, 长方形 → 长条章).
-  const cap = document.querySelector('.imp figcaption'); if (cap) cap.textContent = S.product === 'roller' ? tl('滚出来的效果', 'As rolled') : S.product === 'cutter' ? tl('切出来的效果', 'As cut') : tl('盖出来的效果', 'As stamped');
-  const tf = $('#tab-face'); if (tf) tf.textContent = S.product === 'roller' ? tl('滚轮', 'Roller') : S.product === 'cutter' ? tl('切模', 'Cutter') : tl('印面', 'Face');
+  const cap = document.querySelector('.imp figcaption'); if (cap) cap.textContent = S.product === 'roller' ? tl('滚出来的效果', 'As rolled', '転がした跡', '굴린 모양') : S.product === 'cutter' ? tl('切出来的效果', 'As cut', '抜いた形', '자른 모양') : tl('盖出来的效果', 'As stamped', '押した跡', '찍힌 모양');
+  const tf = $('#tab-face'); if (tf) tf.textContent = S.product === 'roller' ? tl('滚轮', 'Roller', 'ローラー', '롤러') : S.product === 'cutter' ? tl('切模', 'Cutter', '抜き型', '커터') : tl('印面', 'Face', '印面', '인면');
   const presetOf = S.product !== 'stamp' ? '' : { square: 'name', circle: 'round', rect: 'long' }[S.shape];
   document.querySelectorAll('[data-preset]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.preset === presetOf)));
   $('#imgThV').textContent = S.imgThreshold; $('#imgScaleV').textContent = Math.round((+S.imgScale || 1) * 100) + '%'; $('#imgSizeV').textContent = Math.round(S.imgSize * 100) + '%';
   $('#imgNameV').textContent = imgName;
   $('#thickenV').textContent = (+S.thicken).toFixed(2) + ' mm';
-  $('#grooveWV').textContent = (+S.grooveW >= 100 ? tl('占满整边', 'full side') : Math.round(+S.grooveW) + '%');
-  const bv = +S.bulge; $('#bulgeV').textContent = Math.abs(bv) < 0.01 ? tl('笔直', 'straight') : (bv < 0 ? tl('中间细 ', 'narrower ') : tl('中间粗 ', 'wider ')) + Math.abs(bv).toFixed(1) + ' mm';
-  $('#maxAngleV').textContent = S.maxAngle + tl('°（离竖直）', '° from vertical');
-  $('#stretchV').textContent = (+S.stretch) <= 1.001 ? tl('等比', 'none') : '×' + (+S.stretch).toFixed(1);
-  $('#wLabel').textContent = S.shape === 'circle' ? tl('直径', 'Diameter') : S.shape === 'rect' ? tl('宽', 'Width') : tl('边长', 'Side');
-  $('#mirrorTag').textContent = S.mirror ? tl('印面已镜像', 'Face mirrored') : tl('未镜像（盖出来是反字）', 'Not mirrored (prints backwards)');
+  $('#grooveWV').textContent = (+S.grooveW >= 100 ? tl('占满整边', 'full side', '辺いっぱい', '변 전체') : Math.round(+S.grooveW) + '%');
+  const bv = +S.bulge; $('#bulgeV').textContent = Math.abs(bv) < 0.01 ? tl('笔直', 'straight', 'まっすぐ', '일자') : (bv < 0 ? tl('中间细 ', 'narrower ', '中央を細く ', '가운데 가늘게 ') : tl('中间粗 ', 'wider ', '中央を太く ', '가운데 굵게 ')) + Math.abs(bv).toFixed(1) + ' mm';
+  $('#maxAngleV').textContent = S.maxAngle + tl('°（离竖直）', '° from vertical', '°（垂直から）', '°(수직 기준)');
+  $('#stretchV').textContent = (+S.stretch) <= 1.001 ? tl('等比', 'none', 'なし', '없음') : '×' + (+S.stretch).toFixed(1);
+  $('#wLabel').textContent = S.shape === 'circle' ? tl('直径', 'Diameter', '直径', '지름') : S.shape === 'rect' ? tl('宽', 'Width', '幅', '너비') : tl('边长', 'Side', '辺の長さ', '변 길이');
+  $('#mirrorTag').textContent = S.mirror ? tl('印面已镜像', 'Face mirrored', '印面は反転済み', '인면 좌우 반전됨') : tl('未镜像（盖出来是反字）', 'Not mirrored (prints backwards)', '反転なし（押すと文字が逆向き）', '반전 안 함(찍으면 글자가 뒤집힘)');
   const E = eff(S), ctx = { ...E, layoutE: E.layout, hasImg: imgSrc ? '1' : '0', hasWeights: fontInfo(S.font).weights ? '1' : '0', latinText: isLatin(S.text) ? '1' : '0', wallpaper: S.product === 'roller' && rollerWallpaper(S) ? '1' : '0', fitScale: S.product === 'roller' && S.imgFit === 'fill' ? '0' : '1', noCjk: CJK_RE.test(drawnText(S)) ? '0' : '1', latinNeedsEn: (E.layout === 'grid' ? isLatin(S.text) : isLatin(S.ringText)) && fontInfo(S.font).lang !== 'en' && !customFonts.some(f => f.id === S.font) ? '1' : '0', customFont: customFonts.some(f => f.id === S.font) ? '1' : '0' };
   document.querySelectorAll('[data-show]').forEach(el => {
     el.hidden = !el.dataset.show.split('&').every(c => { const [k, vs] = c.split('='); return vs.split('|').includes(String(ctx[k])); });
@@ -889,18 +895,18 @@ document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('clic
 $('#upFontBtn').addEventListener('click', () => $('#upFont').click());
 $('#upFont').addEventListener('change', async e => {
   const file = e.target.files[0]; e.target.value = ''; if (!file) return;
-  status(tl('正在载入字体…', 'Loading font…'));
+  status(tl('正在载入字体…', 'Loading font…', 'フォントを読み込み中…', '글꼴 불러오는 중…'));
   try {
     const data = await file.arrayBuffer();
     const rec = { id: 'u' + Date.now().toString(36), name: file.name.replace(/\.(ttf|otf|woff2?)$/i, ''), data };
     const f = await registerFont(rec); const saved = await idbPut(rec);
     S.font = f.id; fillFontSelect(); persist(); syncUI(); schedule();
-    status(saved ? tl(`已添加字体「${rec.name}」，下次打开还在。`, `Added font “${rec.name}”. It will be here next time.`) : tl(`已添加字体「${rec.name}」（刷新后需重新上传）。`, `Added font “${rec.name}” (upload it again after a reload).`));
-  } catch (err) { status(tl('这个字体文件读不了，换一个 .ttf 或 .otf 试试。', 'Could not read this font. Try a .ttf or .otf file.'), true); }
+    status(saved ? tl(`已添加字体「${rec.name}」，下次打开还在。`, `Added font “${rec.name}”. It will be here next time.`, `フォント「${rec.name}」を追加しました。次回も使えます。`, `글꼴 ‘${rec.name}’을(를) 추가했습니다. 다음에도 쓸 수 있습니다.`) : tl(`已添加字体「${rec.name}」（刷新后需重新上传）。`, `Added font “${rec.name}” (upload it again after a reload).`, `フォント「${rec.name}」を追加しました（再読み込み後はもう一度アップロードしてください）。`, `글꼴 ‘${rec.name}’을(를) 추가했습니다(새로고침하면 다시 업로드하세요).`));
+  } catch (err) { status(tl('这个字体文件读不了，换一个 .ttf 或 .otf 试试。', 'Could not read this font. Try a .ttf or .otf file.', 'このフォントを読み込めませんでした。.ttf か .otf を試してください。', '이 글꼴을 읽을 수 없습니다. .ttf 또는 .otf 파일을 써 보세요.'), true); }
 });
 $('#rmFontBtn').addEventListener('click', async () => {
   const id = S.font; customFonts = customFonts.filter(f => f.id !== id); await idbDel(id);
-  S.font = FONTS[0].id; fillFontSelect(); persist(); syncUI(); schedule(); status(tl('已移除上传的字体。', 'Removed the uploaded font.'));
+  S.font = FONTS[0].id; fillFontSelect(); persist(); syncUI(); schedule(); status(tl('已移除上传的字体。', 'Removed the uploaded font.', 'アップロードしたフォントを削除しました。', '업로드한 글꼴을 삭제했습니다.'));
 });
 
 function status(msg, err) { const el = $('#status'); el.textContent = msg; el.classList.toggle('err', !!err); }
@@ -949,7 +955,7 @@ function showTextSize(mk) {
   const el = $('#textSize'), f = n => n.toFixed(2), words = eff(S).layout === 'grid' && isLatin(S.text);
   if (!mk.textBox) { el.innerHTML = ''; return; }
   const rows = mk.glyphs.map(g => `<tr><th scope="row">${g.ch.replace(/[<&]/g, '')}</th><td>${f(g.w)}</td><td>${f(g.h)}</td></tr>`).join('');
-  el.innerHTML = `<table class="kv${mk.glyphs.length > 6 ? ' many' : ''}"><caption>${words ? tl('每个词（mm）', 'Each word (mm)') : tl('每个字（mm）', 'Each character (mm)')}</caption><thead><tr><th scope="col">${words ? tl('词', 'Word') : tl('字', 'Char')}</th><th scope="col">${tl('宽', 'W')}</th><th scope="col">${tl('高', 'H')}</th></tr></thead><tbody>${rows}</tbody></table>`;
+  el.innerHTML = `<table class="kv${mk.glyphs.length > 6 ? ' many' : ''}"><caption>${words ? tl('每个词（mm）', 'Each word (mm)', '単語ごと（mm）', '단어별 (mm)') : tl('每个字（mm）', 'Each character (mm)', '1 文字ごと（mm）', '글자별 (mm)')}</caption><thead><tr><th scope="col">${words ? tl('词', 'Word', '単語', '단어') : tl('字', 'Char', '文字', '글자')}</th><th scope="col">${tl('宽', 'W', '幅', '폭')}</th><th scope="col">${tl('高', 'H', '高さ', '높이')}</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 /* ---------- 简繁转换 ---------- */
@@ -968,7 +974,7 @@ function loadOpenCC() {
 }
 async function convertAll(toTrad) {
   const btns = [$('#toT'), $('#toS')]; btns.forEach(b => b.disabled = true);
-  status(tl('正在载入简繁字库…', 'Loading the converter…'));
+  status(tl('正在载入简繁字库…', 'Loading the converter…', '変換ツールを読み込み中…', '변환기 불러오는 중…'));
   try {
     const O = await loadOpenCC();
     const conv = toTrad ? O.Converter({ from: 'cn', to: 'tw' }) : O.Converter({ from: 'tw', to: 'cn' });
@@ -977,9 +983,9 @@ async function convertAll(toTrad) {
       const v = S[k] || '', n = conv(v); if (n !== v) { S[k] = n; changed++; }
     }
     persist(); syncUI(); schedule();
-    if (!changed) status(toTrad ? tl('没有需要转成繁体的字。', 'Nothing to convert.') : tl('没有需要转成简体的字。', 'Nothing to convert.'));
-    else status(toTrad ? tl('已转成繁体。一简对多繁的字请看一眼，比如 发→發/髮、后→後/后。', 'Converted to Traditional. Check characters with more than one form, e.g. 发→發/髮.') : tl('已转回简体。', 'Converted to Simplified.'));
-  } catch (e) { status(tl('简繁字库没载入成功，检查网络再试。', 'Could not load the converter. Check your connection and try again.'), true); }
+    if (!changed) status(toTrad ? tl('没有需要转成繁体的字。', 'Nothing to convert.', '繁体字に変換する文字がありません。', '번체로 바꿀 글자가 없습니다.') : tl('没有需要转成简体的字。', 'Nothing to convert.', '簡体字に変換する文字がありません。', '간체로 바꿀 글자가 없습니다.'));
+    else status(toTrad ? tl('已转成繁体。一简对多繁的字请看一眼，比如 发→發/髮、后→後/后。', 'Converted to Traditional. Check characters with more than one form, e.g. 发→發/髮.', '繁体字に変換しました。发→發/髮 のように対応する字が複数あるものは確認してください。', '번체로 바꿨습니다. 发→發/髮처럼 대응하는 글자가 여럿인 경우는 확인하세요.') : tl('已转回简体。', 'Converted to Simplified.', '簡体字に変換しました。', '간체로 바꿨습니다.'));
+  } catch (e) { status(tl('简繁字库没载入成功，检查网络再试。', 'Could not load the converter. Check your connection and try again.', '変換ツールを読み込めませんでした。接続を確認してもう一度お試しください。', '변환기를 불러오지 못했습니다. 연결을 확인하고 다시 시도하세요.'), true); }
   btns.forEach(b => b.disabled = false);
 }
 $('#toT').addEventListener('click', () => convertAll(true));
@@ -993,20 +999,20 @@ function drawSection(mesh, s) {
   const R = Math.max(...all.map(([x, y]) => Math.max(Math.abs(x), Math.abs(y)))) * 1.08, sz = 120, k = sz / 2 / R;
   const path = q => q.map(([x, y], i) => `${i ? 'L' : 'M'}${(sz / 2 + x * k).toFixed(1)},${(sz / 2 - y * k).toFixed(1)}`).join('') + 'Z';
   const [fw, fh] = mesh.face;
-  el.innerHTML = `<svg viewBox="0 0 ${sz} ${sz}" role="img" aria-label="${tl('手柄俯视截面', 'Handle seen from above')}"><path class="sec-body" d="${path(pts)}"/>`
+  el.innerHTML = `<svg viewBox="0 0 ${sz} ${sz}" role="img" aria-label="${tl('手柄俯视截面', 'Handle seen from above', '上から見た持ち手', '위에서 본 손잡이')}"><path class="sec-body" d="${path(pts)}"/>`
     + (col.length ? `<path class="sec-collar" d="${path(col)}"/>` : '')
     + (s.shape === 'circle' ? `<circle class="sec-face" cx="${sz / 2}" cy="${sz / 2}" r="${(fw / 2 * k).toFixed(1)}"/></svg>`
       : `<rect class="sec-face" x="${(sz / 2 - fw / 2 * k).toFixed(1)}" y="${(sz / 2 - fh / 2 * k).toFixed(1)}" width="${(fw * k).toFixed(1)}" height="${(fh * k).toFixed(1)}"/></svg>`)
-    + `<span>${tl('俯视：实线是手柄，虚线是直段，红框是印面', 'Top view: solid = handle, dashed = collar, red = face')}</span>`;
+    + `<span>${tl('俯视：实线是手柄，虚线是直段，红框是印面', 'Top view: solid = handle, dashed = collar, red = face', '上面図：実線 = 持ち手、破線 = ストレート部、赤 = 印面', '위에서 본 모습: 실선 = 손잡이, 점선 = 직선부, 빨강 = 인면')}</span>`;
 }
 
 function showClarity(t, s) {
   const el = $('#clarity'); if (!t.strokeMed) { el.hidden = true; return; } el.hidden = false;
   const f2 = x => x.toFixed(2), heavy = t.strokeMed > 1.0 && t.gapMed < 0.45; // calibrated on test prints: about 0.9 / 0.5 still prints well, 1.2+ / 0.3 is too bold
-  el.innerHTML = `<table class="kv"><caption>${tl('清晰度（mm）', 'Clarity (mm)')}</caption><thead><tr><th scope="col"></th><th scope="col">${tl('这个章', 'This stamp')}</th><th scope="col" title="${tl('一个实测印得很清楚的章', 'A stamp that printed very clearly')}">${tl('参考', 'Reference')}</th></tr></thead><tbody>`
-    + `<tr><th scope="row">${tl('笔画', 'Stroke')}</th><td class="me">${f2(t.strokeMed)}</td><td>${XI.stroke.toFixed(2)}</td></tr>`
-    + `<tr><th scope="row">${tl('空隙', 'Gap')}</th><td class="me">${f2(t.gapMed)}</td><td>${XI.gap.toFixed(2)}</td></tr></tbody></table>`
-    + (heavy ? `<p class="tip">${tl('比参考粗很多、空隙更挤，容易糊：调小「加粗」或字重降一档。', 'Much bolder than the reference with tight gaps, so it may blur: lower Bold + or use a lighter weight.')}</p>` : '');
+  el.innerHTML = `<table class="kv"><caption>${tl('清晰度（mm）', 'Clarity (mm)', 'くっきり度（mm）', '선명도 (mm)')}</caption><thead><tr><th scope="col"></th><th scope="col">${tl('这个章', 'This stamp', 'このスタンプ', '이 스탬프')}</th><th scope="col" title="${tl('一个实测印得很清楚的章', 'A stamp that printed very clearly', '実際にとてもくっきり押せたスタンプ', '실제로 아주 선명하게 찍힌 스탬프')}">${tl('参考', 'Reference', '基準', '기준')}</th></tr></thead><tbody>`
+    + `<tr><th scope="row">${tl('笔画', 'Stroke', '線', '획')}</th><td class="me">${f2(t.strokeMed)}</td><td>${XI.stroke.toFixed(2)}</td></tr>`
+    + `<tr><th scope="row">${tl('空隙', 'Gap', 'すき間', '간격')}</th><td class="me">${f2(t.gapMed)}</td><td>${XI.gap.toFixed(2)}</td></tr></tbody></table>`
+    + (heavy ? `<p class="tip">${tl('比参考粗很多、空隙更挤，容易糊：调小「加粗」或字重降一档。', 'Much bolder than the reference with tight gaps, so it may blur: lower Bold + or use a lighter weight.', '基準よりかなり太く、すき間も狭いのでつぶれやすいです：「太らせる」を下げるか、ウェイトを一段細くしてください。', '기준보다 훨씬 굵고 간격이 좁아 뭉개지기 쉽습니다: ‘굵게 +’를 줄이거나 두께를 한 단계 낮추세요.')}</p>` : '');
   el.classList.toggle('heavy', heavy);
 }
 function showWarns(list) {
@@ -1015,7 +1021,7 @@ function showWarns(list) {
     const li = document.createElement('li'), text = typeof w === 'string' ? w : w.text;
     li.appendChild(document.createTextNode(text));
     if (w.action === 'fixThin' && !el.querySelector('.fix')) {
-      const b = document.createElement('button'); b.className = 'btn fix'; b.type = 'button'; b.textContent = tl('一键调整', 'Auto-fix');
+      const b = document.createElement('button'); b.className = 'btn fix'; b.type = 'button'; b.textContent = tl('一键调整', 'Auto-fix', '自動調整', '자동 조정');
       b.addEventListener('click', () => fixThin(b)); li.appendChild(b);
     }
     el.appendChild(li);
@@ -1030,7 +1036,7 @@ async function checkOf(s0) {
 /* 一键调整：笔画太细就往粗调，空隙太窄就往细调；两种都有时两边都试。
    挑问题最少的，同样少的时候选改动最小的；不允许把字里本来空着的格子（口、日、田）填死。印面大小不动。 */
 async function fixThin(btn) {
-  btn.disabled = true; btn.textContent = tl('调整中…', 'Fixing…');
+  btn.disabled = true; btn.textContent = tl('调整中…', 'Fixing…', '調整中…', '조정 중…');
   const f = fontInfo(S.font), base = { ...S }, yin = S.mode === 'yin';
   const r2 = x => Math.round(x * 100) / 100;
   const b0 = await checkOf(base), before = b0.count + b0.gaps;
@@ -1056,16 +1062,16 @@ async function fixThin(btn) {
   for (const c of cands) {
     const r = await checkOf({ ...base, ...c });
     if (r.holes >= wantHoles) { const n = r.count + r.gaps; if (!best || n < best.n) best = { n, c }; if (n === 0) break; }
-    if (++done % 6 === 0) { btn.textContent = `${tl('调整中…', 'Fixing…')} ${Math.round(100 * done / cands.length)}%`; await new Promise(res => setTimeout(res, 0)); }
+    if (++done % 6 === 0) { btn.textContent = `${tl('调整中…', 'Fixing…', '調整中…', '조정 중…')} ${Math.round(100 * done / cands.length)}%`; await new Promise(res => setTimeout(res, 0)); }
   }
-  btn.disabled = false; btn.textContent = tl('一键调整', 'Auto-fix');
-  const NAME = { weight: tl('字重', 'Weight'), thicken: tl('加粗', 'Bold +'), gap: tl('字间距', 'Spacing'), border: tl('边框粗', 'Border'), stretch: tl('拉伸', 'Stretch') };
-  const fmt = (k, v) => k === 'weight' ? weightName(v) : k === 'stretch' ? (v <= 1.001 ? tl('等比', 'none') : '×' + v) : `${v} mm`;
+  btn.disabled = false; btn.textContent = tl('一键调整', 'Auto-fix', '自動調整', '자동 조정');
+  const NAME = { weight: tl('字重', 'Weight', 'ウェイト', '두께'), thicken: tl('加粗', 'Bold +', '太らせる', '굵게 +'), gap: tl('字间距', 'Spacing', '字間', '자간'), border: tl('边框粗', 'Border', '枠の太さ', '테두리'), stretch: tl('拉伸', 'Stretch', '縦長', '늘이기') };
+  const fmt = (k, v) => k === 'weight' ? weightName(v) : k === 'stretch' ? (v <= 1.001 ? tl('等比', 'none', 'なし', '없음') : '×' + v) : `${v} mm`;
   const changed = best ? Object.entries(best.c).filter(([k, v]) => base[k] !== v && !(k === 'weight' && !f.weights)) : [];
-  if (!best || best.n >= before || !changed.length) { status(isLatin(S.text) ? tl('调不好了。字母太小，可以放大印面、调小图案，或换 Oswald、Bebas Neue。', 'Could not fix it. The letters are too small: make the face bigger, the picture smaller, or try Oswald or Bebas Neue.') : tl('调不好了。字笔画太密，只能放大印面，或换笔画少、粗细均匀的字体（比如思源黑体）。', 'Could not fix it. The characters are too dense: make the face bigger or use a plainer font (e.g. Source Han Sans).')); return; }
+  if (!best || best.n >= before || !changed.length) { status(isLatin(S.text) ? tl('调不好了。字母太小，可以放大印面、调小图案，或换 Oswald、Bebas Neue。', 'Could not fix it. The letters are too small: make the face bigger, the picture smaller, or try Oswald or Bebas Neue.', '調整しきれません。文字が小さすぎます：印面を大きくするか、画像を小さくするか、Oswald や Bebas Neue にしてください。', '조정할 수 없습니다. 글자가 너무 작습니다: 인면을 키우거나 이미지를 줄이거나 Oswald, Bebas Neue로 바꾸세요.') : tl('调不好了。字笔画太密，只能放大印面，或换笔画少、粗细均匀的字体（比如思源黑体）。', 'Could not fix it. The characters are too dense: make the face bigger or use a plainer font (e.g. Source Han Sans).', '調整しきれません。画数が多すぎます：印面を大きくするか、線の太さが均一なフォント（源ノ角ゴシックなど）にしてください。', '조정할 수 없습니다. 획이 너무 촘촘합니다: 인면을 키우거나 획 굵기가 고른 글꼴(본고딕 등)로 바꾸세요.')); return; }
   Object.assign(S, best.c); fillWeights(); persist(); syncUI(); schedule();
-  const what = changed.map(([k, v]) => `${NAME[k]} ${fmt(k, base[k])} → ${fmt(k, v)}`).join(tl('，', ', '));
-  status(best.n === 0 ? tl(`已调整：${what}。现在没有问题了。`, `Fixed: ${what}. All clear now.`) : tl(`已调整：${what}。从 ${before} 处减到 ${best.n} 处；剩下的要放大印面或换字体。`, `Changed: ${what}. ${before} → ${best.n} problems; for the rest, enlarge the face or change font.`));
+  const what = changed.map(([k, v]) => `${NAME[k]} ${fmt(k, base[k])} → ${fmt(k, v)}`).join(tl('，', ', ', '、', ', '));
+  status(best.n === 0 ? tl(`已调整：${what}。现在没有问题了。`, `Fixed: ${what}. All clear now.`, `調整しました：${what}。問題はなくなりました。`, `조정했습니다: ${what}. 이제 문제가 없습니다.`) : tl(`已调整：${what}。从 ${before} 处减到 ${best.n} 处；剩下的要放大印面或换字体。`, `Changed: ${what}. ${before} → ${best.n} problems; for the rest, enlarge the face or change font.`, `調整しました：${what}。問題が ${before} か所から ${best.n} か所に減りました。残りは印面を大きくするかフォントを変えてください。`, `조정했습니다: ${what}. 문제가 ${before}곳에서 ${best.n}곳으로 줄었습니다. 나머지는 인면을 키우거나 글꼴을 바꾸세요.`));
 }
 // Export refuses to run on a stand-in font or an empty face, since the STL would not be what the preview promised.
 function hasContent(s) {
@@ -1074,10 +1080,10 @@ function hasContent(s) {
   return eff(s).layout === 'ring' ? !!(t(s.ringText) || t(s.bottomText) || s.center === 'star' || (s.center === 'text' && t(s.centerText))) : !!t(s.text);
 }
 function exportBlocked() {
-  if (!current) return tl('还在生成，稍等一下再点。', 'Still generating, try again in a moment.');
-  if (!hasContent(current.s)) return tl('印面上还没有字，先输入文字。', 'The face is empty. Type some text first.');
-  if (!current.fontOk) return tl('字体还没载入，联网后刷新再导出。', 'The font has not loaded yet. Reload with a connection, then export.');
-  if (!current.mesh.loops) return tl('印面是空的，先输入文字。', 'The face is empty. Type some text first.');
+  if (!current) return tl('还在生成，稍等一下再点。', 'Still generating, try again in a moment.', 'まだ生成中です。少し待ってからもう一度押してください。', '아직 생성 중입니다. 잠시 후 다시 눌러 주세요.');
+  if (!hasContent(current.s)) return tl('印面上还没有字，先输入文字。', 'The face is empty. Type some text first.', '印面が空です。先に文字を入力してください。', '인면이 비어 있습니다. 먼저 글자를 입력하세요.');
+  if (!current.fontOk) return tl('字体还没载入，联网后刷新再导出。', 'The font has not loaded yet. Reload with a connection, then export.', 'フォントがまだ読み込まれていません。ネットに接続して再読み込みしてから書き出してください。', '글꼴이 아직 로드되지 않았습니다. 인터넷에 연결해 새로고침한 뒤 내보내세요.');
+  if (!current.mesh.loops) return tl('印面是空的，先输入文字。', 'The face is empty. Type some text first.', '印面が空です。先に文字を入力してください。', '인면이 비어 있습니다. 먼저 글자를 입력하세요.');
   return '';
 }
 
@@ -1097,26 +1103,26 @@ async function regenerate() {
   const miss = fontOk ? await missingChars(s) : [];
   if (my !== gen) return;
   if (miss.length) {
-    const lang = scriptOf(miss), shown = miss.slice(0, 6).map(c => tl(`「${c}」`, ` ${c}`)).join('') + (miss.length > 6 ? tl(` 等 ${miss.length} 个字`, ` (${miss.length} in all)`) : '');
-    const isZh = lang === 'zh' || lang === 'tc', fix = isZh ? tl('换思源宋体 / 黑体或「中文繁体」组', 'Source Han Serif / Sans or a Traditional Chinese') : tl(`换「${langName(lang)}」组`, `a ${langName(lang)}`);
-    warns.unshift(tl(`这个字体没有${shown}，现在用别的字体代替。可以${fix}的字体。`, `This font has no${shown}; another font fills in. Try ${fix} font.`));
+    const lang = scriptOf(miss), shown = miss.slice(0, 6).map(c => tl(`「${c}」`, ` ${c}`, `「${c}」`, ` ‘${c}’`)).join('') + (miss.length > 6 ? tl(` 等 ${miss.length} 个字`, ` (${miss.length} in all)`, ` など ${miss.length} 字`, ` 등 ${miss.length}자`) : '');
+    const isZh = lang === 'zh' || lang === 'tc', fix = isZh ? tl('换思源宋体 / 黑体或「中文繁体」组', 'Source Han Serif / Sans or a Traditional Chinese', '源ノ明朝 / 源ノ角ゴシックか「中国語（繁体）」グループの', '본명조 / 본고딕 또는 ‘중국어 번체’ 그룹의') : tl(`换「${langName(lang)}」组`, `a ${langName(lang)}`, `「${langName(lang)}」グループの`, `‘${langName(lang)}’ 그룹의`);
+    warns.unshift(tl(`这个字体没有${shown}，现在用别的字体代替。可以${fix}的字体。`, `This font has no${shown}; another font fills in. Try ${fix} font.`, `このフォントには${shown}がないため、別のフォントで代わりに表示しています。${fix}フォントを試してください。`, `이 글꼴에는${shown}이(가) 없어 다른 글꼴로 대신 표시합니다. ${fix} 글꼴을 써 보세요.`));
   }
-  if (!fontOk) warns.unshift(tl(`字体「${fontInfo(s.font).name}」还没载入，预览不准。联网后刷新再导出。`, `Font “${fontLabel(fontInfo(s.font))}” has not loaded; the preview is not exact. Reload with a connection before exporting.`));
+  if (!fontOk) warns.unshift(tl(`字体「${fontInfo(s.font).name}」还没载入，预览不准。联网后刷新再导出。`, `Font “${fontLabel(fontInfo(s.font))}” has not loaded; the preview is not exact. Reload with a connection before exporting.`, `フォント「${fontLabel(fontInfo(s.font))}」がまだ読み込まれていないため、プレビューは正確ではありません。ネットに接続して再読み込みしてから書き出してください。`, `글꼴 ‘${fontLabel(fontInfo(s.font))}’이(가) 아직 로드되지 않아 미리보기가 정확하지 않습니다. 인터넷에 연결해 새로고침한 뒤 내보내세요.`));
   if (thin.gaps) warns.push({ action: 'fixThin', text: mk.yin
-    ? tl(`${thin.gaps} 处凹下去的笔画太细（蓝色），会印不清。`, `${thin.gaps} engraved ${pl(thin.gaps, 'stroke is', 'strokes are')} too thin (blue); may not print clearly.`)
-    : tl(`${thin.gaps} 个小空格太小（蓝色），会印不清。`, `${thin.gaps} enclosed ${pl(thin.gaps, 'space is', 'spaces are')} too small (blue); may not print clearly.`) });
+    ? tl(`${thin.gaps} 处凹下去的笔画太细（蓝色），会印不清。`, `${thin.gaps} engraved ${pl(thin.gaps, 'stroke is', 'strokes are')} too thin (blue); may not print clearly.`, `凹んだ線が細すぎる所が ${thin.gaps} か所あります（青）。くっきり押せないかもしれません。`, `파인 획이 너무 가는 곳이 ${thin.gaps}곳 있습니다(파랑). 선명하게 찍히지 않을 수 있습니다.`)
+    : tl(`${thin.gaps} 个小空格太小（蓝色），会印不清。`, `${thin.gaps} enclosed ${pl(thin.gaps, 'space is', 'spaces are')} too small (blue); may not print clearly.`, `囲まれたすき間が小さすぎる所が ${thin.gaps} か所あります（青）。くっきり押せないかもしれません。`, `둘러싸인 빈 곳이 너무 작은 곳이 ${thin.gaps}곳 있습니다(파랑). 선명하게 찍히지 않을 수 있습니다.`) });
   if (thin.count) warns.push({ action: 'fixThin', text: mk.yin
-    ? tl(`${thin.count} 处两笔靠太近（黄色），会连在一起。`, `${thin.count} ${pl(thin.count, 'spot where strokes are', 'spots where strokes are')} too close (yellow); they may join.`)
-    : tl(`${thin.count} 处笔画比喷嘴细（黄色），可能断笔。`, `${thin.count} ${pl(thin.count, 'stroke is', 'strokes are')} thinner than the nozzle (yellow); ${pl(thin.count, 'it', 'they')} may break.`) });
+    ? tl(`${thin.count} 处两笔靠太近（黄色），会连在一起。`, `${thin.count} ${pl(thin.count, 'spot where strokes are', 'spots where strokes are')} too close (yellow); they may join.`, `線と線が近すぎる所が ${thin.count} か所あります（黄）。くっついてしまうかもしれません。`, `획끼리 너무 가까운 곳이 ${thin.count}곳 있습니다(노랑). 붙어 버릴 수 있습니다.`)
+    : tl(`${thin.count} 处笔画比喷嘴细（黄色），可能断笔。`, `${thin.count} ${pl(thin.count, 'stroke is', 'strokes are')} thinner than the nozzle (yellow); ${pl(thin.count, 'it', 'they')} may break.`, `ノズルより細い線が ${thin.count} か所あります（黄）。途切れるかもしれません。`, `노즐보다 가는 획이 ${thin.count}곳 있습니다(노랑). 끊어질 수 있습니다.`) });
   showWarns(warns);
   current = { s, mesh, mk, fontOk, thin: thin.count };
   setMesh3D(mesh.tris, mesh.size);
   const ntri = mesh.tris.length / 9, mb = (84 + 50 * ntri) / 1048576;
   const [hh, hb, hr] = mesh.heights, f1 = x => x.toFixed(2), inch = x => (x / 25.4).toFixed(2), [fw, fh] = mesh.face, round = s.shape === 'circle';
   const rg = mesh.roller, cu = mesh.cutter && !mesh.cutter.empty ? mesh.cutter : null, cutEmpty = !!(mesh.cutter && mesh.cutter.empty);
-  $('#kpiFaceL').textContent = rg ? tl('滚轮', 'Roller') : cu ? tl('切出来', 'Cut size') : tl('印面', 'Face');
-  $('#kpiHL').textContent = rg ? tl('滚一圈', 'One turn') : tl('总高', 'Height');
-  if (cutEmpty) { $('#kpiFaceL').textContent = tl('切出来', 'Cut size'); ['#kpiFace', '#kpiH'].forEach(q => $(q).textContent = '—'); ['#kpiFaceIn', '#kpiHIn'].forEach(q => $(q).textContent = ''); }
+  $('#kpiFaceL').textContent = rg ? tl('滚轮', 'Roller', 'ローラー', '롤러') : cu ? tl('切出来', 'Cut size', '抜いた大きさ', '잘린 크기') : tl('印面', 'Face', '印面', '인면');
+  $('#kpiHL').textContent = rg ? tl('滚一圈', 'One turn', '1 回転分', '한 바퀴') : tl('总高', 'Height', '全高', '전체 높이');
+  if (cutEmpty) { $('#kpiFaceL').textContent = tl('切出来', 'Cut size', '抜いた大きさ', '잘린 크기'); ['#kpiFace', '#kpiH'].forEach(q => $(q).textContent = '—'); ['#kpiFaceIn', '#kpiHIn'].forEach(q => $(q).textContent = ''); }
   else if (cu) {
     $('#kpiFace').innerHTML = `${f1(cu.cut[0])} × ${f1(cu.cut[1])}<small>mm</small>`;
     $('#kpiFaceIn').textContent = `${inch(cu.cut[0])} × ${inch(cu.cut[1])} in`;
@@ -1133,31 +1139,31 @@ async function regenerate() {
     $('#kpiHIn').textContent = `${inch(mesh.size[2])} in`;
   }
   const tb = mk.textBox;
-  $('#kpiTextL').textContent = imgSrc && s.imgMode === 'with' ? tl('图文区域', 'Design area') : imgSrc && s.imgMode === 'only' ? tl('图案区域', 'Picture area') : tl('文字区域', 'Text area');
+  $('#kpiTextL').textContent = imgSrc && s.imgMode === 'with' ? tl('图文区域', 'Design area', '図柄エリア', '디자인 영역') : imgSrc && s.imgMode === 'only' ? tl('图案区域', 'Picture area', '画像エリア', '이미지 영역') : tl('文字区域', 'Text area', '文字エリア', '글자 영역');
   $('#kpiText').innerHTML = tb ? `${f1(tb.w)} × ${f1(tb.h)}<small>mm</small>` : '—';
   $('#kpiTextIn').textContent = tb ? `${inch(tb.w)} × ${inch(tb.h)} in` : '';
   if (cutEmpty) $('#stats').textContent = '';
-  else if (cu) $('#stats').textContent = tl(`切模外形 ${f1(cu.whole[0])} × ${f1(cu.whole[1])} mm · 刀口 ${f1(+s.bladeT)} → 根部 ${f1(+s.wallT)} mm · 边沿 ${f1(+s.flangeW)} mm${cu.imp ? ` · 压纹比刀口低 ${f1(+s.imprintGap)} mm` : ''}`, `footprint ${f1(cu.whole[0])} × ${f1(cu.whole[1])} mm · blade ${f1(+s.bladeT)} → base ${f1(+s.wallT)} mm · rim ${f1(+s.flangeW)} mm${cu.imp ? ` · imprint ${f1(+s.imprintGap)} mm above the edge` : ''}`);
-  else if (rg) $('#stats').textContent = tl(`外径 Ø${f1(mesh.size[0])} · 内孔 Ø${f1(rg.hole)} · 壁厚 ${f1((rg.D - rg.hole) / 2)} · 花纹深 ${f1(hr)} mm · ${rg.n} × ${rg.m} 个图案${rg.end > rg.clip + 0.05 ? ` · 两端各空 ${f1(rg.end)} mm` : ''}`, `OD Ø${f1(mesh.size[0])} · hole Ø${f1(rg.hole)} · wall ${f1((rg.D - rg.hole) / 2)} · pattern depth ${f1(hr)} mm · ${rg.n} × ${rg.m} tiles${rg.end > rg.clip + 0.05 ? ` · ${f1(rg.end)} mm blank at each end` : ''}`);
-  else $('#stats').textContent = [hh > 0 ? tl(`手柄 ${f1(hh)}${mesh.neck > 0 ? `（含直段 ${f1(mesh.neck)}）` : ''}`, `handle ${f1(hh)}${mesh.neck > 0 ? ` (incl. collar ${f1(mesh.neck)})` : ''}`) : '', hb > 0 ? tl(`底板 ${f1(hb)}`, `base ${f1(hb)}`) : '', tl(`字凸起 ${f1(hr)} mm`, `relief ${f1(hr)} mm`)].filter(Boolean).join(' + ')
-    + tl(` · 外形最大 ${f1(mesh.size[0])} × ${f1(mesh.size[1])} mm`, ` · footprint ${f1(mesh.size[0])} × ${f1(mesh.size[1])} mm`);
-  if (cu) $('#slicerNote').innerHTML = tl('边沿贴平台、刀口朝上打，不用支撑。', 'Print rim down, blade up. No supports.');
-  else if (rg) $('#slicerNote').innerHTML = s.rollerSlope ? tl('滚轮竖着打（轴朝上）。花纹下沿做了 45° 台阶，不用支撑。', 'Print the roller standing up. The pattern’s lower edges are stepped at 45°, so no supports.') : tl(`滚轮竖着打（轴朝上）。花纹侧面是直的，下沿悬空 ${(+s.reliefH).toFixed(1)} mm；打不好就在「滚轮」页打开「下沿斜边」。`, `Print the roller standing up. Pattern sides are straight, so lower edges overhang ${(+s.reliefH).toFixed(1)} mm; if they sag, turn on “Sloped lower edges” on the Roller tab.`);
+  else if (cu) $('#stats').textContent = tl(`切模外形 ${f1(cu.whole[0])} × ${f1(cu.whole[1])} mm · 刀口 ${f1(+s.bladeT)} → 根部 ${f1(+s.wallT)} mm · 边沿 ${f1(+s.flangeW)} mm${cu.imp ? ` · 压纹比刀口低 ${f1(+s.imprintGap)} mm` : ''}`, `footprint ${f1(cu.whole[0])} × ${f1(cu.whole[1])} mm · blade ${f1(+s.bladeT)} → base ${f1(+s.wallT)} mm · rim ${f1(+s.flangeW)} mm${cu.imp ? ` · imprint ${f1(+s.imprintGap)} mm above the edge` : ''}`, `外形 ${f1(cu.whole[0])} × ${f1(cu.whole[1])} mm · 刃先 ${f1(+s.bladeT)} → 根元 ${f1(+s.wallT)} mm · ツバ ${f1(+s.flangeW)} mm${cu.imp ? ` · 型押しは刃先より ${f1(+s.imprintGap)} mm 低い` : ''}`, `외형 ${f1(cu.whole[0])} × ${f1(cu.whole[1])} mm · 칼날 ${f1(+s.bladeT)} → 밑동 ${f1(+s.wallT)} mm · 받침 ${f1(+s.flangeW)} mm${cu.imp ? ` · 압인은 칼날보다 ${f1(+s.imprintGap)} mm 낮음` : ''}`);
+  else if (rg) $('#stats').textContent = tl(`外径 Ø${f1(mesh.size[0])} · 内孔 Ø${f1(rg.hole)} · 壁厚 ${f1((rg.D - rg.hole) / 2)} · 花纹深 ${f1(hr)} mm · ${rg.n} × ${rg.m} 个图案${rg.end > rg.clip + 0.05 ? ` · 两端各空 ${f1(rg.end)} mm` : ''}`, `OD Ø${f1(mesh.size[0])} · hole Ø${f1(rg.hole)} · wall ${f1((rg.D - rg.hole) / 2)} · pattern depth ${f1(hr)} mm · ${rg.n} × ${rg.m} tiles${rg.end > rg.clip + 0.05 ? ` · ${f1(rg.end)} mm blank at each end` : ''}`, `外径 Ø${f1(mesh.size[0])} · 穴 Ø${f1(rg.hole)} · 壁厚 ${f1((rg.D - rg.hole) / 2)} · 模様の深さ ${f1(hr)} mm · ${rg.n} × ${rg.m} 個${rg.end > rg.clip + 0.05 ? ` · 両端に ${f1(rg.end)} mm 余白` : ''}`, `외경 Ø${f1(mesh.size[0])} · 구멍 Ø${f1(rg.hole)} · 벽 두께 ${f1((rg.D - rg.hole) / 2)} · 무늬 깊이 ${f1(hr)} mm · ${rg.n} × ${rg.m}개${rg.end > rg.clip + 0.05 ? ` · 양끝 각 ${f1(rg.end)} mm 여백` : ''}`);
+  else $('#stats').textContent = [hh > 0 ? tl(`手柄 ${f1(hh)}${mesh.neck > 0 ? `（含直段 ${f1(mesh.neck)}）` : ''}`, `handle ${f1(hh)}${mesh.neck > 0 ? ` (incl. collar ${f1(mesh.neck)})` : ''}`, `持ち手 ${f1(hh)}${mesh.neck > 0 ? `（ストレート部 ${f1(mesh.neck)} を含む）` : ''}`, `손잡이 ${f1(hh)}${mesh.neck > 0 ? `(직선부 ${f1(mesh.neck)} 포함)` : ''}`) : '', hb > 0 ? tl(`底板 ${f1(hb)}`, `base ${f1(hb)}`, `台座 ${f1(hb)}`, `받침판 ${f1(hb)}`) : '', tl(`字凸起 ${f1(hr)} mm`, `relief ${f1(hr)} mm`, `凸 ${f1(hr)} mm`, `돌출 ${f1(hr)} mm`)].filter(Boolean).join(' + ')
+    + tl(` · 外形最大 ${f1(mesh.size[0])} × ${f1(mesh.size[1])} mm`, ` · footprint ${f1(mesh.size[0])} × ${f1(mesh.size[1])} mm`, ` · 外形 ${f1(mesh.size[0])} × ${f1(mesh.size[1])} mm`, ` · 외형 ${f1(mesh.size[0])} × ${f1(mesh.size[1])} mm`);
+  if (cu) $('#slicerNote').innerHTML = tl('边沿贴平台、刀口朝上打，不用支撑。', 'Print rim down, blade up. No supports.', 'ツバを下、刃先を上にして印刷。サポート不要。', '받침을 아래, 칼날을 위로 해서 출력. 서포트 필요 없음.');
+  else if (rg) $('#slicerNote').innerHTML = s.rollerSlope ? tl('滚轮竖着打（轴朝上）。花纹下沿做了 45° 台阶，不用支撑。', 'Print the roller standing up. The pattern’s lower edges are stepped at 45°, so no supports.', 'ローラーは立てて印刷（軸が上）。模様の下側は 45° の段になっているのでサポート不要。', '롤러는 세워서 출력(축이 위). 무늬 아래쪽은 45° 계단이라 서포트 필요 없음.') : tl(`滚轮竖着打（轴朝上）。花纹侧面是直的，下沿悬空 ${(+s.reliefH).toFixed(1)} mm；打不好就在「滚轮」页打开「下沿斜边」。`, `Print the roller standing up. Pattern sides are straight, so lower edges overhang ${(+s.reliefH).toFixed(1)} mm; if they sag, turn on “Sloped lower edges” on the Roller tab.`, `ローラーは立てて印刷（軸が上）。模様の側面はまっすぐなので、下側が ${(+s.reliefH).toFixed(1)} mm 浮きます。うまくいかないときは「ローラー」タブで「下側を斜めに」をオンに。`, `롤러는 세워서 출력(축이 위). 무늬 옆면이 수직이라 아래쪽이 ${(+s.reliefH).toFixed(1)} mm 떠 있습니다. 잘 안 나오면 ‘롤러’ 탭에서 ‘아래쪽 경사’를 켜세요.`);
   else { const sl = slicerOf(s), rl = reliefLayers(mesh.size[2], hr, sl), bench = s.slicer === BENCH_SLICER || !SLICERS[s.slicer];
     const off = Math.abs(rl.printed - hr) > 0.005;
     const pr = off ? `<b>${rl.printed.toFixed(2)}</b>` : rl.printed.toFixed(2);
-    $('#slicerNote').innerHTML = tl(`共 ${rl.layers} 层，字凸起 ${rl.n} 层 = ${pr} mm${off ? `（设的 ${hr.toFixed(2)}）` : ''}`, `${rl.layers} layers; relief ${rl.n} layers = ${pr} mm${off ? ` (set ${hr.toFixed(2)})` : ''}`)
-      + (bench ? '' : tl(`<br>清晰度是按 0.10 配置测的，这个配置线宽 ${sl.lw}，细节可能差一些。`, `<br>Clarity checks were calibrated on the 0.10 profile; this one uses ${sl.lw} mm lines, so fine detail may be softer.`));
+    $('#slicerNote').innerHTML = tl(`共 ${rl.layers} 层，字凸起 ${rl.n} 层 = ${pr} mm${off ? `（设的 ${hr.toFixed(2)}）` : ''}`, `${rl.layers} layers; relief ${rl.n} layers = ${pr} mm${off ? ` (set ${hr.toFixed(2)})` : ''}`, `全 ${rl.layers} 層、凸部 ${rl.n} 層 = ${pr} mm${off ? `（設定 ${hr.toFixed(2)}）` : ''}`, `전체 ${rl.layers}층, 돌출 ${rl.n}층 = ${pr} mm${off ? `(설정 ${hr.toFixed(2)})` : ''}`)
+      + (bench ? '' : tl(`<br>清晰度是按 0.10 配置测的，这个配置线宽 ${sl.lw}，细节可能差一些。`, `<br>Clarity checks were calibrated on the 0.10 profile; this one uses ${sl.lw} mm lines, so fine detail may be softer.`, `<br>くっきり度の判定は 0.10 のプロファイルで測ったものです。このプロファイルは線幅 ${sl.lw} mm なので、細部は少し甘くなるかもしれません。`, `<br>선명도 판정은 0.10 프로파일 기준입니다. 이 프로파일은 선폭이 ${sl.lw} mm라 세부가 조금 흐릴 수 있습니다.`));
   }
   showClarity(thin, s); drawImgPrev();
-  $('#meshInfo').textContent = tl(`面数 ${ntri.toLocaleString()} · STL ${mb.toFixed(1)} MB`, `${ntri.toLocaleString()} triangles · STL ${mb.toFixed(1)} MB`);
+  $('#meshInfo').textContent = tl(`面数 ${ntri.toLocaleString()} · STL ${mb.toFixed(1)} MB`, `${ntri.toLocaleString()} triangles · STL ${mb.toFixed(1)} MB`, `ポリゴン ${ntri.toLocaleString()} · STL ${mb.toFixed(1)} MB`, `삼각형 ${ntri.toLocaleString()}개 · STL ${mb.toFixed(1)} MB`);
   if (!rg && !cu) drawSection(mesh, s);
   const hn = $('#handleNote');
-  hn.textContent = mesh.notes.length ? mesh.notes.join(tl('；', '; ')) + tl('。', '.') : ''; hn.hidden = !mesh.notes.length;
+  hn.textContent = mesh.notes.length ? mesh.notes.join(tl('；', '; ', '。', '; ')) + tl('。', '.', '。', '.') : ''; hn.hidden = !mesh.notes.length;
   hn.classList.toggle('err', mesh.notes.length > 0);
   const empty = !mesh.loops || !hasContent(s);
   $('#dl').disabled = $('#dlStl').disabled = empty;
-  if (empty) status(tl('印面上还没有字，先输入文字。', 'The face is empty. Type some text first.'), true);
+  if (empty) status(tl('印面上还没有字，先输入文字。', 'The face is empty. Type some text first.', '印面が空です。先に文字を入力してください。', '인면이 비어 있습니다. 먼저 글자를 입력하세요.'), true);
   else if ($('#status').classList.contains('err')) status('');
 }
 
@@ -1388,29 +1394,29 @@ function drawCutterImpression(mesh, s, thin, mk) {
 }
 function cutterSpec(s0, mesh, mk) {
   const s = eff(s0), cu = mesh.cutter, f = fontInfo(s.font);
-  const fontName = (LANG === 'en' ? (f.en || f.name) : f.name).replace(/（.*?）|\s*\(.*?\)/g, '');
+  const fontName = fontLabel(f);
   return { cutter: true, s, text: stampText(s), cut: cu.cut, whole: cu.whole, Hc: cu.H, imp: cu.imp, fontName, grams: meshVolume(mesh.tris) / 1000 * PLA_DENSITY };
 }
 function cutterLines(p) {
   const E = LANG === 'en', L = [];
-  L.push(`${bi('图案', 'Design')}: ${p.text}`);
-  L.push(`${bi('切出来的大小', 'Cut size')}: ${mm(p.cut[0])} × ${mm(p.cut[1])} mm (${inch(p.cut[0])} × ${inch(p.cut[1])} in)`);
-  L.push(`${bi('切模外形', 'Cutter footprint')}: ${mm(p.whole[0])} × ${mm(p.whole[1])} mm (${inch(p.whole[0])} × ${inch(p.whole[1])} in)`);
-  L.push(`${bi('高度', 'Height')}: ${mm(p.Hc)} mm (${inch(p.Hc)} in)`);
-  L.push(`${bi('刀口 / 根部', 'Blade / wall base')}: ${mm(+p.s.bladeT)} / ${mm(+p.s.wallT)} mm`);
-  L.push(`${bi('内部压纹', 'Imprint')}: ${p.imp ? (E ? `yes, ${mm(+p.s.imprintGap)} mm above the blade edge` : `有，比刀口低 ${mm(+p.s.imprintGap)} mm`) : bi('无', 'none')}`);
-  L.push(`${bi('重量', 'Weight')}: ${E ? `approx. ${Math.round(p.grams)} g` : `约 ${Math.round(p.grams)} g`} ≈ ${(p.grams / 28.35).toFixed(2)} oz`);
-  L.push(`${bi('材料', 'Material')}: ${E ? '3D printed PLA' : 'PLA 3D 打印 / 3D printed PLA'}`);
+  L.push(`${bi('图案', 'Design', '図柄', '디자인')}: ${p.text}`);
+  L.push(`${bi('切出来的大小', 'Cut size', '抜いた大きさ', '잘린 크기')}: ${mm(p.cut[0])} × ${mm(p.cut[1])} mm (${inch(p.cut[0])} × ${inch(p.cut[1])} in)`);
+  L.push(`${bi('切模外形', 'Cutter footprint', '抜き型の外形', '커터 외형')}: ${mm(p.whole[0])} × ${mm(p.whole[1])} mm (${inch(p.whole[0])} × ${inch(p.whole[1])} in)`);
+  L.push(`${bi('高度', 'Height', '高さ', '높이')}: ${mm(p.Hc)} mm (${inch(p.Hc)} in)`);
+  L.push(`${bi('刀口 / 根部', 'Blade / wall base', '刃先 / 根元', '칼날 / 밑동')}: ${mm(+p.s.bladeT)} / ${mm(+p.s.wallT)} mm`);
+  L.push(`${bi('内部压纹', 'Imprint', '型押し', '압인')}: ${p.imp ? tl(`有，比刀口低 ${mm(+p.s.imprintGap)} mm`, `yes, ${mm(+p.s.imprintGap)} mm above the blade edge`, `あり、刃先より ${mm(+p.s.imprintGap)} mm 低い`, `있음, 칼날보다 ${mm(+p.s.imprintGap)} mm 낮음`) : bi('无', 'none', 'なし', '없음')}`);
+  L.push(`${bi('重量', 'Weight', '重さ', '무게')}: ${tl(`约 ${Math.round(p.grams)} g`, `approx. ${Math.round(p.grams)} g`, `約 ${Math.round(p.grams)} g`, `약 ${Math.round(p.grams)} g`)} ≈ ${(p.grams / 28.35).toFixed(2)} oz`);
+  L.push(`${bi('材料', 'Material', '素材', '재료')}: ${tl('PLA 3D 打印 / 3D printed PLA', '3D printed PLA', 'PLA 3D プリント / 3D printed PLA', 'PLA 3D 프린팅 / 3D printed PLA')}`);
   return L;
 }
 async function cutterCard(p) {
   const N = 1600, c = canvas(N, 1200), x = c.getContext('2d'), INK = '#1f1d1a', MUTED = '#6d6a62';
   const SANS = '"Noto Sans SC","Noto Sans JP","Noto Sans KR","PingFang SC","Microsoft YaHei",sans-serif';
-  x.fillStyle = '#fff'; x.fillRect(0, 0, N, 1200); x.fillStyle = INK; x.font = `700 50px ${SANS}`; x.fillText(tl('切模规格  Cutter specs', 'Cutter specs'), 80, 120);
+  x.fillStyle = '#fff'; x.fillRect(0, 0, N, 1200); x.fillStyle = INK; x.font = `700 50px ${SANS}`; x.fillText(tl('切模规格  Cutter specs', 'Cutter specs', '抜き型の仕様  Cutter specs', '커터 사양  Cutter specs'), 80, 120);
   x.font = `400 32px ${SANS}`; x.fillStyle = MUTED; x.fillText(p.text.slice(0, 60), 80, 172);
   const imp = $('#imp'), k = Math.min((N - 160) / imp.width, 620 / imp.height); x.drawImage(imp, 80, 220, imp.width * k, imp.height * k);
-  const rows = [[bi('切出来的大小', 'Cut size'), `${mm(p.cut[0])} × ${mm(p.cut[1])} mm   ${inch(p.cut[0])} × ${inch(p.cut[1])} in`], [bi('切模外形', 'Footprint'), `${mm(p.whole[0])} × ${mm(p.whole[1])} mm`],
-    [bi('高度', 'Height'), `${mm(p.Hc)} mm   ${inch(p.Hc)} in`], [bi('重量', 'Weight'), tl(`约 ${Math.round(p.grams)} g`, `approx. ${Math.round(p.grams)} g`)]];
+  const rows = [[bi('切出来的大小', 'Cut size', '抜いた大きさ', '잘린 크기'), `${mm(p.cut[0])} × ${mm(p.cut[1])} mm   ${inch(p.cut[0])} × ${inch(p.cut[1])} in`], [bi('切模外形', 'Footprint', '外形', '외형'), `${mm(p.whole[0])} × ${mm(p.whole[1])} mm`],
+    [bi('高度', 'Height', '高さ', '높이'), `${mm(p.Hc)} mm   ${inch(p.Hc)} in`], [bi('重量', 'Weight', '重さ', '무게'), tl(`约 ${Math.round(p.grams)} g`, `approx. ${Math.round(p.grams)} g`, `約 ${Math.round(p.grams)} g`, `약 ${Math.round(p.grams)} g`)]];
   const y0 = 240 + imp.height * k + 60;
   rows.forEach(([a, b], i) => { const y = y0 + i * 62; x.strokeStyle = '#e4e0d6'; x.lineWidth = 2; x.beginPath(); x.moveTo(80, y - 42); x.lineTo(N - 80, y - 42); x.stroke();
     x.fillStyle = MUTED; x.font = `400 26px ${SANS}`; x.fillText(a, 80, y); x.fillStyle = INK; x.font = `700 28px ${SANS}`; x.fillText(b, 440, y); });
@@ -1449,99 +1455,99 @@ const dlCap = (window.claude && typeof window.claude.use === 'function') ? windo
 async function saveFile(filename, blob) {
   const dl = await Promise.race([dlCap, new Promise(r => setTimeout(() => r(null), 3000))]);
   if (dl) {
-    try { await dl.save({ filename, data: blob }); status(tl(`已保存 ${filename}。`, `Saved ${filename}.`)); }
-    catch (e) { status(e && e.code === 'declined' ? tl('已取消下载。', 'Download cancelled.') : tl('下载没成功：', 'Download failed: ') + ((e && e.message) || tl('未知原因', 'unknown reason')), e && e.code !== 'declined'); }
+    try { await dl.save({ filename, data: blob }); status(tl(`已保存 ${filename}。`, `Saved ${filename}.`, `${filename} を保存しました。`, `${filename} 파일을 저장했습니다.`)); }
+    catch (e) { status(e && e.code === 'declined' ? tl('已取消下载。', 'Download cancelled.', 'ダウンロードをキャンセルしました。', '다운로드를 취소했습니다.') : tl('下载没成功：', 'Download failed: ', 'ダウンロードできませんでした：', '다운로드 실패: ') + ((e && e.message) || tl('未知原因', 'unknown reason', '原因不明', '알 수 없는 이유')), e && e.code !== 'declined'); }
     return;
   }
   const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 8000);
-  status(tl(`已生成 ${filename}。`, `Created ${filename}.`));
+  status(tl(`已生成 ${filename}。`, `Created ${filename}.`, `${filename} を作成しました。`, `${filename} 파일을 만들었습니다.`));
 }
-const safeName = t => (t || tl('印章', 'stamp')).replace(/[\\/:*?"<>|｜\s]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) || tl('印章', 'stamp');
-function nameFor(s) { if (imgSrc && s.imgMode === 'only') return safeName(imgName.replace(/\.[a-z0-9]+$/i, '') || tl('图案', 'picture')); const e = eff(s); return safeName(e.layout === 'ring' ? (s.ringText || s.bottomText) : s.text); }
+const safeName = t => (t || tl('印章', 'stamp', 'スタンプ', '스탬프')).replace(/[\\/:*?"<>|｜\s]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) || tl('印章', 'stamp', 'スタンプ', '스탬프');
+function nameFor(s) { if (imgSrc && s.imgMode === 'only') return safeName(imgName.replace(/\.[a-z0-9]+$/i, '') || tl('图案', 'picture', '画像', '이미지')); const e = eff(s); return safeName(e.layout === 'ring' ? (s.ringText || s.bottomText) : s.text); }
 /* ---------- 规格（Etsy 上架用） ---------- */
 const MM2IN = 1 / 25.4, PLA_DENSITY = 1.24; // g/cm³
-const SHAPE_NAME = { square: ['方形', 'Square'], rect: ['长方形', 'Rectangle'], circle: ['圆形', 'Round'] };
-const TRANS_NAME = { straight: ['直筒', 'straight'], arc: ['细柄·弧形', 'slim, curved flare'], line: ['细柄·斜面', 'slim, angled flare'], step: ['细柄·直角', 'slim, stepped'] };
+const SHAPE_NAME = { square: ['方形', 'Square', '正方形', '정사각형'], rect: ['长方形', 'Rectangle', '長方形', '직사각형'], circle: ['圆形', 'Round', '円形', '원형'] };
+const TRANS_NAME = { straight: ['直筒', 'straight', 'ストレート', '일자형'], arc: ['细柄·弧形', 'slim, curved flare', '細身・曲線', '가는 곡선형'], line: ['细柄·斜面', 'slim, angled flare', '細身・斜面', '가는 경사형'], step: ['细柄·直角', 'slim, stepped', '細身・段差', '가는 계단형'] };
 function meshVolume(t) { let v = 0; for (let k = 0; k < t.length; k += 9) v += (t[k] * (t[k + 4] * t[k + 8] - t[k + 5] * t[k + 7]) - t[k + 1] * (t[k + 3] * t[k + 8] - t[k + 5] * t[k + 6]) + t[k + 2] * (t[k + 3] * t[k + 7] - t[k + 4] * t[k + 6])) / 6; return Math.abs(v); }
-function stampText(s) { const pic = imgSrc && s.imgMode !== 'none'; if (pic && s.imgMode === 'only') return tl('图案', 'Picture'); return (pic ? tl('图案 + ', 'Picture + ') : '') + stampText0(s); }
+function stampText(s) { const pic = imgSrc && s.imgMode !== 'none'; if (pic && s.imgMode === 'only') return tl('图案', 'Picture', '画像', '이미지'); return (pic ? tl('图案 + ', 'Picture + ', '画像 + ', '이미지 + ') : '') + stampText0(s); }
 function stampText0(s) { const e = eff(s); return e.layout === 'ring' ? [s.ringText, s.center === 'text' ? s.centerText : '', s.bottomText].filter(Boolean).join(' / ') : (isLatin(s.text) ? s.text.replace(/\s*[\/|｜]\s*/g, ' ') : (s.text || '').replace(/[\/|｜]/g, '')); }
 function specOf(s0, mesh, mk) {
   if (mesh.roller) return rollerSpec(s0, mesh, mk);
   if (mesh.cutter) return cutterSpec(s0, mesh, mk);
   const s = eff(s0), [fw, fh] = mesh.face, [W, H, Z] = mesh.size, [hh, hb, hr] = mesh.heights, f = fontInfo(s.font);
-  const fontName = (LANG === 'en' ? (f.en || f.name) : f.name).replace(/（.*?）|\s*\(.*?\)/g, '') + (f.weights && s.weight >= 700 ? ' ' + weightName(s.weight >= 900 ? 900 : 700) : '');
+  const fontName = fontLabel(f) + (f.weights && s.weight >= 700 ? ' ' + weightName(s.weight >= 900 ? 900 : 700) : '');
   return { s, text: stampText(s), shape: SHAPE_NAME[s.shape], round: s.shape === 'circle', fw, fh, W, H, Z, hh, hb, hr,
     textBox: mk.textBox, withImg: !!(imgSrc && s.imgMode === 'with'), glyphs: mk.glyphs, yin: s.mode === 'yin', handle: s.handle === 'grip' ? TRANS_NAME[s.trans] || TRANS_NAME.straight : null,
     fontName, neck: s.handle === 'grip' ? mesh.neck : 0, grams: meshVolume(mesh.tris) / 1000 * PLA_DENSITY, mirror: s.mirror };
 }
 const mm = x => x.toFixed(2), inch = x => (x * MM2IN).toFixed(2);
 const dim2 = (a, b, round) => round ? `Ø ${mm(a)} mm (Ø ${inch(a)} in)` : `${mm(a)} × ${mm(b)} mm (${inch(a)} × ${inch(b)} in)`;
-// Spec text: bilingual in the Chinese interface (the English half is for Etsy), English only in the English interface.
-const bi = (zh, en) => LANG === 'en' ? en : `${zh} ${en}`;
+// Spec text: bilingual (local + English, the English half is for Etsy), English only in the English interface.
+const bi = (zh, en, ja, ko) => LANG === 'en' ? en : `${tl(zh, en, ja, ko)} ${en}`;
 function specLines(p) {
   if (p.roller) return rollerLines(p);
   if (p.cutter) return cutterLines(p);
   const L = [], E = LANG === 'en';
-  L.push(`${bi('印章文字', 'Text')}: ${p.text}`);
-  L.push(`${bi('印面形状', 'Shape')}: ${E ? p.shape[1] : p.shape[0] + ' ' + p.shape[1]}${E ? ', ' : '，'}${p.yin ? bi('阴文（字凹下）', 'Engraved') : bi('阳文（字凸起）', 'Raised')}`);
-  L.push(`${bi('印面大小（盖出来）', 'Stamp face')}: ${dim2(p.fw, p.fh, p.round)}`);
-  if (p.textBox) L.push(`${p.withImg ? bi('图文区域', 'Design area') : bi('文字区域', 'Text area')}: ${mm(p.textBox.w)} × ${mm(p.textBox.h)} mm (${inch(p.textBox.w)} × ${inch(p.textBox.h)} in)`);
-  L.push(`${bi('外形最大', 'Overall footprint')}: ${p.round && Math.abs(p.W - p.H) < 0.05 ? dim2(p.W, p.H, true) : dim2(p.W, p.H, false)}`);
-  L.push(`${bi('总高', 'Total height')}: ${mm(p.Z)} mm (${inch(p.Z)} in)`);
-  L.push(`  ${p.hh > 0 ? `${bi('手柄', 'handle')} ${mm(p.hh)}${p.neck > 0 ? (E ? ` (incl. straight collar ${mm(p.neck)})` : `（含直段 incl. straight collar ${mm(p.neck)}）`) : ''} + ` : ''}${p.hb > 0 ? `${bi('底板', 'base')} ${mm(p.hb)} + ` : ''}${bi('字凸起', 'relief')} ${mm(p.hr)} mm`);
+  L.push(`${bi('印章文字', 'Text', '文字', '글자')}: ${p.text}`);
+  L.push(`${bi('印面形状', 'Shape', '印面の形', '인면 모양')}: ${E ? p.shape[1] : p.shape[{ zh: 0, ja: 2, ko: 3 }[LANG]] + ' ' + p.shape[1]}${tl('，', ', ', '、', ', ')}${p.yin ? bi('阴文（字凹下）', 'Engraved', '陰刻（文字が凹む）', '음각(글자가 파임)') : bi('阳文（字凸起）', 'Raised', '陽刻（文字が凸）', '양각(글자가 볼록)')}`);
+  L.push(`${bi('印面大小（盖出来）', 'Stamp face', '印面の大きさ（押した跡）', '인면 크기(찍힌 모양)')}: ${dim2(p.fw, p.fh, p.round)}`);
+  if (p.textBox) L.push(`${p.withImg ? bi('图文区域', 'Design area', '図柄エリア', '디자인 영역') : bi('文字区域', 'Text area', '文字エリア', '글자 영역')}: ${mm(p.textBox.w)} × ${mm(p.textBox.h)} mm (${inch(p.textBox.w)} × ${inch(p.textBox.h)} in)`);
+  L.push(`${bi('外形最大', 'Overall footprint', '外形の最大', '최대 외형')}: ${p.round && Math.abs(p.W - p.H) < 0.05 ? dim2(p.W, p.H, true) : dim2(p.W, p.H, false)}`);
+  L.push(`${bi('总高', 'Total height', '全高', '전체 높이')}: ${mm(p.Z)} mm (${inch(p.Z)} in)`);
+  L.push(`  ${p.hh > 0 ? `${bi('手柄', 'handle', '持ち手', '손잡이')} ${mm(p.hh)}${p.neck > 0 ? tl(`（含直段 incl. straight collar ${mm(p.neck)}）`, ` (incl. straight collar ${mm(p.neck)})`, `（ストレート部 ${mm(p.neck)} を含む incl. straight collar）`, `(직선부 ${mm(p.neck)} 포함 incl. straight collar)`) : ''} + ` : ''}${p.hb > 0 ? `${bi('底板', 'base', '台座', '받침판')} ${mm(p.hb)} + ` : ''}${bi('字凸起', 'relief', '凸', '돌출')} ${mm(p.hr)} mm`);
   const gv = grooveLabel(p.s);
-  if (+p.s.topInset > 0) { const sl = slicerOf(p.s), k = Math.max(1, Math.floor(Math.min(0.4, p.hr * 0.4) / (2 * sl.lh) + 1e-6)); L.push(`${bi('字顶收窄', 'Top inset')}: ${mm(+p.s.topInset)} mm${E ? ` (top ${2 * k} layers at ${sl.lh} mm)` : `（最上面 ${2 * k} 层，层高 ${sl.lh}）`}`); }
-  L.push(`${bi('手柄', 'Handle')}: ${p.handle ? `${E ? p.handle[1] : p.handle[0] + ' ' + p.handle[1]}${gv && p.s.grooveD > 0 ? (E ? `, finger grips on ${gv}, ${mm(+p.s.grooveD)} mm deep` : `，${gv}凹槽 ${mm(+p.s.grooveD)} mm（finger grips）`) : ''}` : bi('无', 'none')}`);
-  L.push(`${bi('字体', 'Font')}: ${p.fontName}`);
-  L.push(`${bi('重量', 'Weight')}: ${E ? `approx. ${Math.round(p.grams)} g (solid, 100% infill) ≈ ${(p.grams / 28.35).toFixed(2)} oz` : `约 ${Math.round(p.grams)} g（实心，100% 填充 / solid） ≈ ${(p.grams / 28.35).toFixed(2)} oz`}`);
-  L.push(`${bi('材料', 'Material')}: ${E ? '3D printed PLA' : 'PLA 3D 打印 / 3D printed PLA'}`);
-  L.push(`${bi('切片', 'Slicer')}: Bambu Studio ${E ? `“${slicerOf(p.s).name}”` : `「${slicerOf(p.s).name}」`}`);
+  if (+p.s.topInset > 0) { const sl = slicerOf(p.s), k = Math.max(1, Math.floor(Math.min(0.4, p.hr * 0.4) / (2 * sl.lh) + 1e-6)); L.push(`${bi('字顶收窄', 'Top inset', '先端を細く', '윗면 좁히기')}: ${mm(+p.s.topInset)} mm${tl(`（最上面 ${2 * k} 层，层高 ${sl.lh}）`, ` (top ${2 * k} layers at ${sl.lh} mm)`, `（上の ${2 * k} 層、層高 ${sl.lh}）`, `(위쪽 ${2 * k}층, 층 높이 ${sl.lh})`)}`); }
+  L.push(`${bi('手柄', 'Handle', '持ち手', '손잡이')}: ${p.handle ? `${E ? p.handle[1] : p.handle[{ zh: 0, ja: 2, ko: 3 }[LANG]] + ' ' + p.handle[1]}${gv && p.s.grooveD > 0 ? tl(`，${gv}凹槽 ${mm(+p.s.grooveD)} mm（finger grips）`, `, finger grips on ${gv}, ${mm(+p.s.grooveD)} mm deep`, `、${gv}に指の溝 ${mm(+p.s.grooveD)} mm（finger grips）`, `, ${gv} 손가락 홈 ${mm(+p.s.grooveD)} mm(finger grips)`) : ''}` : bi('无', 'none', 'なし', '없음')}`);
+  L.push(`${bi('字体', 'Font', 'フォント', '글꼴')}: ${p.fontName}`);
+  L.push(`${bi('重量', 'Weight', '重さ', '무게')}: ${tl(`约 ${Math.round(p.grams)} g（实心，100% 填充 / solid）`, `approx. ${Math.round(p.grams)} g (solid, 100% infill)`, `約 ${Math.round(p.grams)} g（充填率 100% / solid）`, `약 ${Math.round(p.grams)} g(채움 100% / solid)`)} ≈ ${(p.grams / 28.35).toFixed(2)} oz`);
+  L.push(`${bi('材料', 'Material', '素材', '재료')}: ${tl('PLA 3D 打印 / 3D printed PLA', '3D printed PLA', 'PLA 3D プリント / 3D printed PLA', 'PLA 3D 프린팅 / 3D printed PLA')}`);
+  L.push(`${bi('切片', 'Slicer', 'スライサー', '슬라이서')}: Bambu Studio ${tl(`「${slicerOf(p.s).name}」`, `“${slicerOf(p.s).name}”`, `「${slicerOf(p.s).name}」`, `“${slicerOf(p.s).name}”`)}`);
   return L;
 }
 function rollerSpec(s0, mesh, mk) {
   const s = eff(s0), g = mesh.roller, f = fontInfo(s.font);
-  const fontName = (LANG === 'en' ? (f.en || f.name) : f.name).replace(/（.*?）|\s*\(.*?\)/g, '') + (f.weights && s.weight >= 700 ? ' ' + weightName(s.weight >= 900 ? 900 : 700) : '');
+  const fontName = fontLabel(f) + (f.weights && s.weight >= 700 ? ' ' + weightName(s.weight >= 900 ? 900 : 700) : '');
   return { roller: true, s, text: stampText(s), OD: mesh.size[0], L: g.L, C: g.C, D: g.D, hole: g.hole, n: g.n, m: g.m, tileW: g.tileW, tileH: g.tileH, hr: +s.reliefH,
     textBox: mk.textBox, withImg: !!(imgSrc && s.imgMode === 'with'), glyphs: mk.glyphs, fontName, grams: meshVolume(mesh.tris) / 1000 * PLA_DENSITY, etsy: true };
 }
 function rollerLines(p) {
   const E = LANG === 'en', L = [];
-  L.push(`${bi('图案', 'Design')}: ${p.text}`);
-  L.push(`${bi('滚轮', 'Roller')}: Ø ${mm(p.OD)} × ${mm(p.L)} mm (Ø ${inch(p.OD)} × ${inch(p.L)} in)`);
-  L.push(`${bi('内孔', 'Hole')}: Ø ${mm(p.hole)} mm (${inch(p.hole)} in)`);
-  L.push(`${bi('滚一圈', 'One turn')}: ${mm(p.C)} × ${mm(p.L)} mm (${inch(p.C)} × ${inch(p.L)} in)`);
-  L.push(`${bi('花纹深', 'Pattern depth')}: ${mm(p.hr)} mm`);
-  L.push(`${bi('图案排列', 'Tiles')}: ${p.n} × ${p.m}${E ? ` (each ${mm(p.tileW)} × ${mm(p.tileH)} mm)` : `（每个 ${mm(p.tileW)} × ${mm(p.tileH)} mm）`}`);
-  if (p.textBox) L.push(`${bi('单个图案', 'Each design')}: ${mm(p.textBox.w)} × ${mm(p.textBox.h)} mm (${inch(p.textBox.w)} × ${inch(p.textBox.h)} in)`);
-  L.push(`${bi('字体', 'Font')}: ${p.fontName}`);
-  L.push(`${bi('重量', 'Weight')}: ${E ? `approx. ${Math.round(p.grams)} g (solid)` : `约 ${Math.round(p.grams)} g（实心 / solid）`} ≈ ${(p.grams / 28.35).toFixed(2)} oz`);
-  L.push(`${bi('材料', 'Material')}: ${E ? '3D printed PLA' : 'PLA 3D 打印 / 3D printed PLA'}`);
+  L.push(`${bi('图案', 'Design', '図柄', '디자인')}: ${p.text}`);
+  L.push(`${bi('滚轮', 'Roller', 'ローラー', '롤러')}: Ø ${mm(p.OD)} × ${mm(p.L)} mm (Ø ${inch(p.OD)} × ${inch(p.L)} in)`);
+  L.push(`${bi('内孔', 'Hole', '穴', '구멍')}: Ø ${mm(p.hole)} mm (${inch(p.hole)} in)`);
+  L.push(`${bi('滚一圈', 'One turn', '1 回転分', '한 바퀴')}: ${mm(p.C)} × ${mm(p.L)} mm (${inch(p.C)} × ${inch(p.L)} in)`);
+  L.push(`${bi('花纹深', 'Pattern depth', '模様の深さ', '무늬 깊이')}: ${mm(p.hr)} mm`);
+  L.push(`${bi('图案排列', 'Tiles', '模様の並び', '무늬 배열')}: ${p.n} × ${p.m}${tl(`（每个 ${mm(p.tileW)} × ${mm(p.tileH)} mm）`, ` (each ${mm(p.tileW)} × ${mm(p.tileH)} mm)`, `（1 個 ${mm(p.tileW)} × ${mm(p.tileH)} mm）`, `(각 ${mm(p.tileW)} × ${mm(p.tileH)} mm)`)}`);
+  if (p.textBox) L.push(`${bi('单个图案', 'Each design', '模様 1 個', '무늬 1개')}: ${mm(p.textBox.w)} × ${mm(p.textBox.h)} mm (${inch(p.textBox.w)} × ${inch(p.textBox.h)} in)`);
+  L.push(`${bi('字体', 'Font', 'フォント', '글꼴')}: ${p.fontName}`);
+  L.push(`${bi('重量', 'Weight', '重さ', '무게')}: ${tl(`约 ${Math.round(p.grams)} g（实心 / solid）`, `approx. ${Math.round(p.grams)} g (solid)`, `約 ${Math.round(p.grams)} g（中実 / solid）`, `약 ${Math.round(p.grams)} g(꽉 채움 / solid)`)} ≈ ${(p.grams / 28.35).toFixed(2)} oz`);
+  L.push(`${bi('材料', 'Material', '素材', '재료')}: ${tl('PLA 3D 打印 / 3D printed PLA', '3D printed PLA', 'PLA 3D プリント / 3D printed PLA', 'PLA 3D 프린팅 / 3D printed PLA')}`);
   return L;
 }
 async function rollerCard(p) {
   const N = 1600, c = canvas(N, 1200), x = c.getContext('2d'), INK = '#1f1d1a', MUTED = '#6d6a62';
   const SANS = '"Noto Sans SC","Noto Sans JP","Noto Sans KR","PingFang SC","Microsoft YaHei",sans-serif';
-  x.fillStyle = '#fff'; x.fillRect(0, 0, N, 1200); x.fillStyle = INK; x.font = `700 50px ${SANS}`; x.fillText(tl('滚轮规格  Roller specs', 'Roller specs'), 80, 120);
+  x.fillStyle = '#fff'; x.fillRect(0, 0, N, 1200); x.fillStyle = INK; x.font = `700 50px ${SANS}`; x.fillText(tl('滚轮规格  Roller specs', 'Roller specs', 'ローラーの仕様  Roller specs', '롤러 사양  Roller specs'), 80, 120);
   x.font = `400 32px ${SANS}`; x.fillStyle = MUTED; x.fillText(p.text.slice(0, 60), 80, 172);
-  x.font = `400 26px ${SANS}`; x.fillText(tl('滚一圈压出来的样子 One turn, as rolled', 'One full turn, as rolled'), 80, 250);
+  x.font = `400 26px ${SANS}`; x.fillText(tl('滚一圈压出来的样子 One turn, as rolled', 'One full turn, as rolled', '1 回転で付く模様 One turn, as rolled', '한 바퀴 굴린 모양 One turn, as rolled'), 80, 250);
   const imp = $('#imp'), k = Math.min((N - 160) / imp.width, 560 / imp.height); x.drawImage(imp, 80, 280, imp.width * k, imp.height * k);
-  const rows = [[bi('滚轮', 'Roller'), `Ø ${mm(p.OD)} × ${mm(p.L)} mm   Ø ${inch(p.OD)} × ${inch(p.L)} in`], [bi('滚一圈', 'One turn'), `${mm(p.C)} mm   ${inch(p.C)} in`],
-    [bi('花纹深', 'Pattern depth'), `${mm(p.hr)} mm`], [bi('重量', 'Weight'), tl(`约 ${Math.round(p.grams)} g`, `approx. ${Math.round(p.grams)} g (${(p.grams / 28.35).toFixed(2)} oz)`)]];
+  const rows = [[bi('滚轮', 'Roller', 'ローラー', '롤러'), `Ø ${mm(p.OD)} × ${mm(p.L)} mm   Ø ${inch(p.OD)} × ${inch(p.L)} in`], [bi('滚一圈', 'One turn', '1 回転分', '한 바퀴'), `${mm(p.C)} mm   ${inch(p.C)} in`],
+    [bi('花纹深', 'Pattern depth', '模様の深さ', '무늬 깊이'), `${mm(p.hr)} mm`], [bi('重量', 'Weight', '重さ', '무게'), tl(`约 ${Math.round(p.grams)} g`, `approx. ${Math.round(p.grams)} g (${(p.grams / 28.35).toFixed(2)} oz)`, `約 ${Math.round(p.grams)} g`, `약 ${Math.round(p.grams)} g`)]];
   const y0 = 300 + imp.height * k + 60;
   rows.forEach(([a, b], i) => { const y = y0 + i * 62; x.strokeStyle = '#e4e0d6'; x.lineWidth = 2; x.beginPath(); x.moveTo(80, y - 42); x.lineTo(N - 80, y - 42); x.stroke();
     x.fillStyle = MUTED; x.font = `400 26px ${SANS}`; x.fillText(a, 80, y); x.fillStyle = INK; x.font = `700 28px ${SANS}`; x.fillText(b, 440, y); });
   return new Promise(r => c.toBlob(r, 'image/png'));
 }
 function specTxt(p) {
-  if (p.cutter) return [tl('切模规格 / Cutter specs', 'Cutter specs'), '='.repeat(30), ...specLines(p), '',
-    tl('—— Etsy 描述可直接复制 / Paste into Etsy listing ——', '—— Paste into your Etsy listing ——'),
+  if (p.cutter) return [tl('切模规格 / Cutter specs', 'Cutter specs', '抜き型の仕様 / Cutter specs', '커터 사양 / Cutter specs'), '='.repeat(30), ...specLines(p), '',
+    tl('—— Etsy 描述可直接复制 / Paste into Etsy listing ——', '—— Paste into your Etsy listing ——', '—— Etsy の商品説明にそのまま使えます / Paste into Etsy listing ——', '—— Etsy 상품 설명에 바로 붙여 넣기 / Paste into Etsy listing ——'),
     `Cuts a ${mm(p.cut[0])} × ${mm(p.cut[1])} mm (${inch(p.cut[0])} × ${inch(p.cut[1])} in) shape`, `Cutter height: ${mm(p.Hc)} mm (${inch(p.Hc)} in)`, p.imp ? 'Cuts and imprints the design in one press' : '', `Material: 3D printed PLA`, '',
-    tl(`生成时间 ${new Date().toLocaleString('zh-CN')} · 印章打印器`, `Made ${new Date().toLocaleString('en-US')} · Stamp Maker`)].filter(x => x !== '').join('\n');
-  if (p.roller) return [tl('滚轮规格 / Roller specs', 'Roller specs'), '='.repeat(30), ...specLines(p), '',
-    tl('—— Etsy 描述可直接复制 / Paste into Etsy listing ——', '—— Paste into your Etsy listing ——'),
+    tl(`生成时间 ${new Date().toLocaleString('zh-CN')} · 印章打印器`, `Made ${new Date().toLocaleString('en-US')} · Stamp Maker`, `作成日時 ${new Date().toLocaleString('ja-JP')} · スタンプメーカー`, `생성 시각 ${new Date().toLocaleString('ko-KR')} · 스탬프 메이커`)].filter(x => x !== '').join('\n');
+  if (p.roller) return [tl('滚轮规格 / Roller specs', 'Roller specs', 'ローラーの仕様 / Roller specs', '롤러 사양 / Roller specs'), '='.repeat(30), ...specLines(p), '',
+    tl('—— Etsy 描述可直接复制 / Paste into Etsy listing ——', '—— Paste into your Etsy listing ——', '—— Etsy の商品説明にそのまま使えます / Paste into Etsy listing ——', '—— Etsy 상품 설명에 바로 붙여 넣기 / Paste into Etsy listing ——'),
     `Roller: ${mm(p.OD)} mm (${inch(p.OD)} in) diameter × ${mm(p.L)} mm (${inch(p.L)} in) long`, `Pattern repeats every ${mm(p.C)} mm (${inch(p.C)} in)`, `Pattern depth: ${mm(p.hr)} mm`, `Material: 3D printed PLA`, '',
-    tl(`生成时间 ${new Date().toLocaleString('zh-CN')} · 印章打印器`, `Made ${new Date().toLocaleString('en-US')} · Stamp Maker`)].join('\n');
+    tl(`生成时间 ${new Date().toLocaleString('zh-CN')} · 印章打印器`, `Made ${new Date().toLocaleString('en-US')} · Stamp Maker`, `作成日時 ${new Date().toLocaleString('ja-JP')} · スタンプメーカー`, `생성 시각 ${new Date().toLocaleString('ko-KR')} · 스탬프 메이커`)].join('\n');
   const etsy = [
     `Stamp face: ${p.round ? `${mm(p.fw)} mm (${inch(p.fw)} in) diameter` : `${mm(p.fw)} × ${mm(p.fh)} mm (${inch(p.fw)} × ${inch(p.fh)} in)`}`,
     `Overall height: ${mm(p.Z)} mm (${inch(p.Z)} in)`,
@@ -1550,10 +1556,10 @@ function specTxt(p) {
     `Material: 3D printed PLA`
   ].filter(Boolean);
   const glyphs = (p.glyphs || []).map(g => `${g.ch} ${mm(g.w)}×${mm(g.h)}`).join('  ');
-  return [tl('印章规格 / Stamp specs', 'Stamp specs'), '='.repeat(30), ...specLines(p), '',
-    tl('单字尺寸 宽×高 mm / Each character W×H mm', 'Each character W×H mm'), glyphs, '',
-    tl('—— Etsy 描述可直接复制 / Paste into Etsy listing ——', '—— Paste into your Etsy listing ——'), ...etsy, '',
-    tl(`生成时间 ${new Date().toLocaleString('zh-CN')} · 印章打印器`, `Made ${new Date().toLocaleString('en-US')} · Stamp Maker`)].join('\n');
+  return [tl('印章规格 / Stamp specs', 'Stamp specs', 'スタンプの仕様 / Stamp specs', '스탬프 사양 / Stamp specs'), '='.repeat(30), ...specLines(p), '',
+    tl('单字尺寸 宽×高 mm / Each character W×H mm', 'Each character W×H mm', '1 文字のサイズ 幅×高さ mm / Each character W×H mm', '글자별 크기 폭×높이 mm / Each character W×H mm'), glyphs, '',
+    tl('—— Etsy 描述可直接复制 / Paste into Etsy listing ——', '—— Paste into your Etsy listing ——', '—— Etsy の商品説明にそのまま使えます / Paste into Etsy listing ——', '—— Etsy 상품 설명에 바로 붙여 넣기 / Paste into Etsy listing ——'), ...etsy, '',
+    tl(`生成时间 ${new Date().toLocaleString('zh-CN')} · 印章打印器`, `Made ${new Date().toLocaleString('en-US')} · Stamp Maker`, `作成日時 ${new Date().toLocaleString('ja-JP')} · スタンプメーカー`, `생성 시각 ${new Date().toLocaleString('ko-KR')} · 스탬프 메이커`)].join('\n');
 }
 
 /* 规格卡：印面和侧面用同一个比例绘制，附 10 mm 比例尺 */
@@ -1566,7 +1572,7 @@ async function specCard(p, mesh, mk) {
   try { await Promise.race([Promise.all([document.fonts.load(`700 40px "Noto Sans SC"`, p.text + '印章规格'), document.fonts.load(`400 32px "Noto Sans KR"`, p.text), document.fonts.load(`400 32px "Noto Sans JP"`, p.text), document.fonts.load(`400 26px "Noto Sans SC"`, '印面大小总高文字区域')]), new Promise(r => setTimeout(r, 4000))]); } catch (e) {}
   x.fillStyle = '#ffffff'; x.fillRect(0, 0, N, N);
   x.fillStyle = INK; x.textBaseline = 'alphabetic';
-  x.font = `700 50px ${SANS}`; x.fillText(tl('印章规格  Stamp specs', 'Stamp specs'), 80, 120);
+  x.font = `700 50px ${SANS}`; x.fillText(tl('印章规格  Stamp specs', 'Stamp specs', 'スタンプの仕様  Stamp specs', '스탬프 사양  Stamp specs'), 80, 120);
   x.font = `400 32px ${SANS}`; x.fillStyle = MUTED;
   let tt = p.text; while (x.measureText(tt).width > N - 160 && tt.length > 1) tt = tt.slice(0, -2) + '…';
   x.fillText(tt, 80, 172);
@@ -1594,7 +1600,7 @@ async function specCard(p, mesh, mk) {
   };
   // section labels
   x.fillStyle = MUTED; x.font = `400 26px ${SANS}`;
-  x.fillText(tl('印面（盖出来的效果） Stamp face', 'Stamp face (as printed on paper)'), 80, top - 40); x.fillText(tl('侧面 Side view', 'Side view'), 740, top - 40);
+  x.fillText(tl('印面（盖出来的效果） Stamp face', 'Stamp face (as printed on paper)', '印面（押した跡） Stamp face', '인면(찍힌 모양) Stamp face'), 80, top - 40); x.fillText(tl('侧面 Side view', 'Side view', '側面 Side view', '측면 Side view'), 740, top - 40);
   // face view
   const pw = fw * sc, ph = fh * sc, fx = leftCx - pw / 2, fy = top + (areaW - ph) / 2;
   const tint = inkCanvas(mk, p.s, RED, null);
@@ -1612,9 +1618,9 @@ async function specCard(p, mesh, mk) {
   x.fillStyle = BODY_D; x.fillRect(rightCx - fw / 2 * sc, yOf(zTop), fw * sc, p.hr * sc);
   x.strokeStyle = 'rgba(31,29,26,.35)'; x.lineWidth = 1.5; x.stroke();
   const sx0 = rightCx + Math.max(...prof.map(r => r.x1)) * sc;
-  dimV(sx0 + 190, yOf(zTop), yOf(0), tl(`总高 ${mm(zTop)} mm`, `Height ${mm(zTop)} mm`), `${inch(zTop)} in`, 1, INK);
+  dimV(sx0 + 190, yOf(zTop), yOf(0), tl(`总高 ${mm(zTop)} mm`, `Height ${mm(zTop)} mm`, `全高 ${mm(zTop)} mm`, `전체 높이 ${mm(zTop)} mm`), `${inch(zTop)} in`, 1, INK);
   let zz = 0; const parts = [];
-  const RELIEF = tl('字凸起', 'Relief'); if (p.hh > 0) { parts.push([tl('手柄', 'Handle'), p.hh - (p.neck || 0)]); if (p.neck > 0) parts.push([tl('直段', 'Collar'), p.neck]); } if (p.hb > 0) parts.push([tl('底板', 'Base'), p.hb]); parts.push([RELIEF, p.hr]);
+  const RELIEF = tl('字凸起', 'Relief', '凸', '돌출'); if (p.hh > 0) { parts.push([tl('手柄', 'Handle', '持ち手', '손잡이'), p.hh - (p.neck || 0)]); if (p.neck > 0) parts.push([tl('直段', 'Collar', 'ストレート部', '직선부'), p.neck]); } if (p.hb > 0) parts.push([tl('底板', 'Base', '台座', '받침판'), p.hb]); parts.push([RELIEF, p.hr]);
   x.font = `400 22px ${SANS}`;
   parts.forEach(([n, h], i) => {
     const y0 = yOf(zz + h), y1 = yOf(zz); zz += h;
@@ -1626,14 +1632,14 @@ async function specCard(p, mesh, mk) {
   // 10 mm scale bar
   const sbY = 1140, sbX = 80;
   x.fillStyle = INK; x.fillRect(sbX, sbY, 10 * sc, 10); x.fillStyle = '#fff'; x.fillRect(sbX + 5 * sc, sbY + 2, 5 * sc - 2, 6);
-  x.fillStyle = MUTED; x.font = `400 22px ${SANS}`; x.fillText(tl(`10 mm 比例尺（两图同比例） scale`, `10 mm scale (both views)`), sbX + 10 * sc + 20, sbY + 12);
+  x.fillStyle = MUTED; x.font = `400 22px ${SANS}`; x.fillText(tl(`10 mm 比例尺（两图同比例） scale`, `10 mm scale (both views)`, `10 mm スケール（2 つの図は同じ縮尺） scale`, `10 mm 축척(두 그림 같은 비율) scale`), sbX + 10 * sc + 20, sbY + 12);
   // spec table
   const rows = [
-    [bi('印面大小', 'Stamp face'), p.round ? `Ø ${mm(p.fw)} mm   Ø ${inch(p.fw)} in` : `${mm(p.fw)} × ${mm(p.fh)} mm   ${inch(p.fw)} × ${inch(p.fh)} in`],
-    [bi('总高', 'Total height'), `${mm(p.Z)} mm   ${inch(p.Z)} in`],
-    [p.withImg ? bi('图文区域', 'Design area') : bi('文字区域', 'Text area'), p.textBox ? `${mm(p.textBox.w)} × ${mm(p.textBox.h)} mm   ${inch(p.textBox.w)} × ${inch(p.textBox.h)} in` : '—'],
-    [bi('重量', 'Weight'), tl(`约 ${Math.round(p.grams)} g（实心） approx. ${(p.grams / 28.35).toFixed(2)} oz`, `approx. ${Math.round(p.grams)} g (${(p.grams / 28.35).toFixed(2)} oz), solid`)],
-    [bi('样式', 'Style'), tl(`${p.shape[0]} · ${p.yin ? '阴文' : '阳文'} · ${p.handle ? p.handle[0] + '手柄' : '无手柄'} · ${p.fontName}`, `${p.shape[1]} · ${p.yin ? 'engraved' : 'raised'} · ${p.handle ? p.handle[1] + ' handle' : 'no handle'} · ${p.fontName}`)]
+    [bi('印面大小', 'Stamp face', '印面の大きさ', '인면 크기'), p.round ? `Ø ${mm(p.fw)} mm   Ø ${inch(p.fw)} in` : `${mm(p.fw)} × ${mm(p.fh)} mm   ${inch(p.fw)} × ${inch(p.fh)} in`],
+    [bi('总高', 'Total height', '全高', '전체 높이'), `${mm(p.Z)} mm   ${inch(p.Z)} in`],
+    [p.withImg ? bi('图文区域', 'Design area', '図柄エリア', '디자인 영역') : bi('文字区域', 'Text area', '文字エリア', '글자 영역'), p.textBox ? `${mm(p.textBox.w)} × ${mm(p.textBox.h)} mm   ${inch(p.textBox.w)} × ${inch(p.textBox.h)} in` : '—'],
+    [bi('重量', 'Weight', '重さ', '무게'), tl(`约 ${Math.round(p.grams)} g（实心） approx. ${(p.grams / 28.35).toFixed(2)} oz`, `approx. ${Math.round(p.grams)} g (${(p.grams / 28.35).toFixed(2)} oz), solid`, `約 ${Math.round(p.grams)} g（中まで充填） approx. ${(p.grams / 28.35).toFixed(2)} oz`, `약 ${Math.round(p.grams)} g(꽉 채움) approx. ${(p.grams / 28.35).toFixed(2)} oz`)],
+    [bi('样式', 'Style', 'スタイル', '스타일'), tl(`${p.shape[0]} · ${p.yin ? '阴文' : '阳文'} · ${p.handle ? p.handle[0] + '手柄' : '无手柄'} · ${p.fontName}`, `${p.shape[1]} · ${p.yin ? 'engraved' : 'raised'} · ${p.handle ? p.handle[1] + ' handle' : 'no handle'} · ${p.fontName}`, `${p.shape[2]} · ${p.yin ? '陰刻' : '陽刻'} · ${p.handle ? p.handle[2] + 'の持ち手' : '持ち手なし'} · ${p.fontName}`, `${p.shape[3]} · ${p.yin ? '음각' : '양각'} · ${p.handle ? p.handle[3] + ' 손잡이' : '손잡이 없음'} · ${p.fontName}`)]
   ];
   x.strokeStyle = '#e4e0d6'; x.lineWidth = 2;
   rows.forEach(([k2, v], i) => {
@@ -1650,25 +1656,25 @@ function settingsJson(s) {
   const pic = imgSrc && s.imgMode !== 'none' ? { name: imgName, data: imgDataURL() } : undefined;
   return JSON.stringify({ app: 'stamp-printer', version: 1, saved: new Date().toISOString(), uploadedFontName: f ? f.name : undefined, image: pic, settings: rest }, null, 2);
 }
-function baseName(p, n) { if (p.cutter) return `${n}_${tl('切模', 'cutter')}_${mm(p.cut[0])}x${mm(p.cut[1])}mm`; if (p.roller) return `${n}_${tl('滚轮', 'roller')}_D${mm(p.OD)}x${mm(p.L)}mm`; return `${n}_${p.round ? 'D' + mm(p.fw) : mm(p.fw) + 'x' + mm(p.fh)}mm`; }
+function baseName(p, n) { if (p.cutter) return `${n}_${tl('切模', 'cutter', '抜き型', '커터')}_${mm(p.cut[0])}x${mm(p.cut[1])}mm`; if (p.roller) return `${n}_${tl('滚轮', 'roller', 'ローラー', '롤러')}_D${mm(p.OD)}x${mm(p.L)}mm`; return `${n}_${p.round ? 'D' + mm(p.fw) : mm(p.fw) + 'x' + mm(p.fh)}mm`; }
 async function packOne(s, mesh, mk, n, dir = '') {
   const p = specOf(s, mesh, mk), b = baseName(p, n);
   return { p, b, files: [
     { name: dir + b + '.stl', data: Geo.stl(mesh.tris, 'stamp') },
-    { name: dir + b + tl('_规格卡.png', '_spec-card.png'), data: await u8(await specCard(p, mesh, mk)) },
-    { name: dir + b + tl('_规格.txt', '_specs.txt'), data: enc8(specTxt(p)) }
+    { name: dir + b + tl('_规格卡.png', '_spec-card.png', '_仕様カード.png', '_사양카드.png'), data: await u8(await specCard(p, mesh, mk)) },
+    { name: dir + b + tl('_规格.txt', '_specs.txt', '_仕様.txt', '_사양.txt'), data: enc8(specTxt(p)) }
   ] };
 }
 const useZipOnly = () => Promise.race([dlCap, new Promise(r => setTimeout(() => r(null), 3000))]);
 $('#dl').addEventListener('click', async () => {
-  const b = $('#dl'); b.disabled = true; status(tl('正在生成 STL、规格卡和规格说明…', 'Making the STL, spec card and specs…'));
+  const b = $('#dl'); b.disabled = true; status(tl('正在生成 STL、规格卡和规格说明…', 'Making the STL, spec card and specs…', 'STL・仕様カード・仕様書を作成中…', 'STL, 사양 카드, 사양서 만드는 중…'));
   try {
     clearTimeout(timer); await regenerate();
     const why = exportBlocked(); if (why) { status(why, true); b.disabled = false; return; }
     const { s, mesh, mk } = current, pk = await packOne(s, mesh, mk, nameFor(s));
-    pk.files.push({ name: pk.b + tl('_设置.json', '_settings.json'), data: enc8(settingsJson(s)) });
+    pk.files.push({ name: pk.b + tl('_设置.json', '_settings.json', '_設定.json', '_설정.json'), data: enc8(settingsJson(s)) });
     await saveFile(pk.b + '.zip', await makeZip(pk.files));
-  } catch (e) { status(tl('导出失败：', 'Export failed: ') + e.message, true); }
+  } catch (e) { status(tl('导出失败：', 'Export failed: ', '書き出しに失敗しました：', '내보내기 실패: ') + e.message, true); }
   b.disabled = false;
 });
 $('#dlStl').addEventListener('click', async () => {
@@ -1678,7 +1684,7 @@ $('#dlStl').addEventListener('click', async () => {
     const { s, mesh, mk } = current, n = baseName(specOf(s, mesh, mk), nameFor(s)), stl = Geo.stl(mesh.tris, 'stamp');
     if (await useZipOnly()) await saveFile(n + '.zip', await makeZip([{ name: n + '.stl', data: stl }]));
     else await saveFile(n + '.stl', new Blob([stl], { type: 'model/stl' }));
-  } catch (e) { status(tl('导出失败：', 'Export failed: ') + e.message, true); }
+  } catch (e) { status(tl('导出失败：', 'Export failed: ', '書き出しに失敗しました：', '내보내기 실패: ') + e.message, true); }
 });
 
 /* 导入设置：还原以前导出的印章 */
@@ -1690,13 +1696,13 @@ $('#impFile').addEventListener('change', async e => {
     if (!st || typeof st !== 'object') throw new Error('bad');
     const clean = {}; for (const k of Object.keys(DEF)) if (k in st && typeof st[k] === typeof DEF[k]) clean[k] = st[k];
     S = migrate({ ...S, ...clean }); S.trans = 'straight';
-    let note = tl('已还原设置。', 'Settings restored.');
-    if (j.image && j.image.data) { try { setImage(await loadImageURL(j.image.data), j.image.name); await imgSave(); } catch (e2) { note = tl('已还原设置，但图案读不出来，请重新上传。', 'Settings restored, but the picture could not be read. Upload it again.'); } }
-    else if (S.imgMode !== 'none' && !imgSrc) { note = tl('已还原设置。文件里没有图案，请在「图案」页重新上传。', 'Settings restored. The file has no picture; upload it on the Picture tab.'); }
-    if (![...FONTS, ...customFonts].some(f => f.id === S.font)) { note = tl(`已还原设置，但没有字体「${j.uploadedFontName || '上传的字体'}」，先用${fontLabel(FONTS[0])}代替。重新上传后再选它。`, `Settings restored, but the font “${j.uploadedFontName || 'uploaded font'}” is not on this computer; using ${fontLabel(FONTS[0])} for now. Upload it again and pick it.`); S.font = FONTS[0].id; }
+    let note = tl('已还原设置。', 'Settings restored.', '設定を復元しました。', '설정을 복원했습니다.');
+    if (j.image && j.image.data) { try { setImage(await loadImageURL(j.image.data), j.image.name); await imgSave(); } catch (e2) { note = tl('已还原设置，但图案读不出来，请重新上传。', 'Settings restored, but the picture could not be read. Upload it again.', '設定を復元しましたが、画像を読み込めませんでした。もう一度アップロードしてください。', '설정을 복원했지만 이미지를 읽지 못했습니다. 다시 업로드하세요.'); } }
+    else if (S.imgMode !== 'none' && !imgSrc) { note = tl('已还原设置。文件里没有图案，请在「图案」页重新上传。', 'Settings restored. The file has no picture; upload it on the Picture tab.', '設定を復元しました。ファイルに画像が入っていないので、「画像」タブでアップロードし直してください。', '설정을 복원했습니다. 파일에 이미지가 없으니 ‘이미지’ 탭에서 다시 업로드하세요.'); }
+    if (![...FONTS, ...customFonts].some(f => f.id === S.font)) { note = tl(`已还原设置，但没有字体「${j.uploadedFontName || '上传的字体'}」，先用${fontLabel(FONTS[0])}代替。重新上传后再选它。`, `Settings restored, but the font “${j.uploadedFontName || 'uploaded font'}” is not on this computer; using ${fontLabel(FONTS[0])} for now. Upload it again and pick it.`, `設定を復元しましたが、フォント「${j.uploadedFontName || 'アップロードしたフォント'}」がないため、いったん${fontLabel(FONTS[0])}を使っています。アップロードし直してから選んでください。`, `설정을 복원했지만 글꼴 ‘${j.uploadedFontName || '업로드한 글꼴'}’이(가) 없어 우선 ${fontLabel(FONTS[0])}을(를) 씁니다. 다시 업로드한 뒤 선택하세요.`); S.font = FONTS[0].id; }
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     fillFontSelect(); persist(); syncUI(); schedule(); status(note);
-  } catch (err) { status(tl('这个文件不是印章打印器导出的设置文件。', 'This is not a settings file from Stamp Maker.'), true); }
+  } catch (err) { status(tl('这个文件不是印章打印器导出的设置文件。', 'This is not a settings file from Stamp Maker.', 'このファイルはスタンプメーカーの設定ファイルではありません。', '스탬프 메이커에서 내보낸 설정 파일이 아닙니다.'), true); }
 });
 
 /* ---------- 图案 page ---------- */
@@ -1725,13 +1731,13 @@ $('#imgFile').addEventListener('change', async e => {
     // a logo has its pixels far from the light/dark cutoff (only its anti-aliased edges are near it); a photo or gradient has lots of them near it
     for (let i = 0; i < d.length; i += 16) { const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; all++; if (Math.abs(l - S.imgThreshold) < 30) mid++; }
     const photo = mid / all > 0.08;
-    status(!imgMask(S) ? tl('这张图片几乎全是浅色，转出来是空的。把「深浅阈值」往右拖，或勾「反色」。', 'This picture is almost all light, so nothing came out. Drag Threshold right or tick Invert.')
-      : photo ? tl(`已载入「${file.name}」，但灰色层次很多（像照片），印出来会糊。最好用黑白分明的 logo 或剪影。`, `Loaded “${file.name}”, but it has many greys (like a photo) and will print as a blob. Clean black-and-white logos work best.`)
-      : tl(`已载入「${file.name}」。`, `Loaded “${file.name}”.`));
-  } catch (err) { status(tl('这个文件读不了，换一张 PNG、JPG 或 SVG 试试。', 'Could not read this file. Try a PNG, JPG or SVG.'), true); }
+    status(!imgMask(S) ? tl('这张图片几乎全是浅色，转出来是空的。把「深浅阈值」往右拖，或勾「反色」。', 'This picture is almost all light, so nothing came out. Drag Threshold right or tick Invert.', 'この画像はほとんど明るい色なので、何も残りませんでした。「しきい値」を右に動かすか、「反転」にチェックしてください。', '이 이미지는 거의 밝은색이라 아무것도 남지 않았습니다. ‘임계값’을 오른쪽으로 옮기거나 ‘반전’을 체크하세요.')
+      : photo ? tl(`已载入「${file.name}」，但灰色层次很多（像照片），印出来会糊。最好用黑白分明的 logo 或剪影。`, `Loaded “${file.name}”, but it has many greys (like a photo) and will print as a blob. Clean black-and-white logos work best.`, `「${file.name}」を読み込みましたが、グレーが多く（写真のよう）、押すとつぶれます。白黒がはっきりしたロゴやシルエットが向いています。`, `‘${file.name}’을(를) 불러왔지만 회색이 많아(사진처럼) 찍으면 뭉개집니다. 흑백이 뚜렷한 로고나 실루엣이 좋습니다.`)
+      : tl(`已载入「${file.name}」。`, `Loaded “${file.name}”.`, `「${file.name}」を読み込みました。`, `‘${file.name}’을(를) 불러왔습니다.`));
+  } catch (err) { status(tl('这个文件读不了，换一张 PNG、JPG 或 SVG 试试。', 'Could not read this file. Try a PNG, JPG or SVG.', 'このファイルは読み込めません。PNG・JPG・SVG を試してください。', '이 파일을 읽을 수 없습니다. PNG, JPG, SVG를 써 보세요.'), true); }
   finally { setTimeout(() => URL.revokeObjectURL(url), 5000); }
 });
-$('#imgRm').addEventListener('click', async () => { imgSrc = null; imgName = ''; imgCache = { key: '' }; S.imgMode = 'none'; await imgSave(); persist(); syncUI(); schedule(); status(tl('已移除图片。', 'Picture removed.')); });
+$('#imgRm').addEventListener('click', async () => { imgSrc = null; imgName = ''; imgCache = { key: '' }; S.imgMode = 'none'; await imgSave(); persist(); syncUI(); schedule(); status(tl('已移除图片。', 'Picture removed.', '画像を削除しました。', '이미지를 삭제했습니다.')); });
 
 /* ---------- tabs ---------- */
 const TAB_KEY = 'stamp-printer-tab';
@@ -1933,29 +1939,389 @@ const I18N_EN = {
 "铺满": "Fill",
 "填充": "Fit"
 };
+const I18N_JA = {
+"印章打印器": "スタンプメーカー",
+"导入设置…": "設定を読み込む…",
+"预览与导出": "プレビューと書き出し",
+"3D 模型预览，可拖动旋转": "3D プレビュー（ドラッグで回転）",
+"拖动旋转 · 滚轮缩放": "ドラッグで回転 · ホイールで拡大縮小",
+"印面已镜像": "印面は反転済み",
+"盖出来的效果": "押した跡",
+"印面": "印面",
+"总高": "全高",
+"文字区域": "文字エリア",
+"下载 STL + 规格": "STL + 仕様をダウンロード",
+"模型信息": "モデル情報",
+"模板": "テンプレート",
+"设置": "設定",
+"文字": "文字",
+"图案": "画像",
+"手柄": "持ち手",
+"打印": "印刷",
+"印章文字": "スタンプの文字",
+"排列": "向き",
+"竖排·右起": "縦書き（右から）",
+"横排": "横書き",
+"字间距": "字間",
+"环形文字": "リング文字",
+"环字高": "リング文字の高さ",
+"环绕角度": "リングの角度",
+"距边框": "枠からの距離",
+"中心": "中央",
+"五角星": "星",
+"无": "なし",
+"中心文字": "中央の文字",
+"中心大小": "中央のサイズ",
+"下方文字": "下の文字",
+"字高": "文字の高さ",
+"下移": "下へ移動",
+"简 → 繁": "簡 → 繁",
+"繁 → 简": "繁 → 簡",
+"字体": "フォント",
+"字重": "ウェイト",
+"英文建议换「英文」组的字体，如 Roboto Slab、Bebas Neue。": "英字には「英語」グループのフォント（Roboto Slab、Bebas Neue など）がおすすめです。",
+"上传 .ttf / .otf，会记在这个浏览器里": ".ttf / .otf をアップロード（このブラウザに保存されます）",
+"上传字体…": "フォントをアップロード…",
+"移除此字体": "このフォントを削除",
+"上传图片…": "画像をアップロード…",
+"移除图片": "画像を削除",
+"PNG / JPG / SVG。黑白分明的 logo、剪影最好，照片不适合。": "PNG / JPG / SVG。白黒がはっきりしたロゴやシルエットが最適。写真は向きません。",
+"图案转成黑白后的样子": "白黒にした画像",
+"红色部分会凸起。": "赤い部分が凸になります。",
+"用法": "使い方",
+"图案 + 文字": "画像 + 文字",
+"深浅阈值": "しきい値",
+"← 只要最深的": "← 濃い所だけ",
+"浅一点的也算 →": "薄い所も →",
+"排版": "レイアウト",
+"位置": "位置",
+"图在上": "画像を上に",
+"图在下": "画像を下に",
+"图在左": "画像を左に",
+"图在右": "画像を右に",
+"对齐": "揃え",
+"靠左": "左揃え",
+"水平居中": "左右中央",
+"靠右": "右揃え",
+"靠上": "上揃え",
+"垂直居中": "上下中央",
+"靠下": "下揃え",
+"间距": "間隔",
+"图案大小": "画像サイズ",
+"圆章的图案放在中间。": "丸型では画像は中央に入ります。",
+"形状": "形",
+"方形": "正方形",
+"长方形": "長方形",
+"圆形": "円形",
+"环形排字": "文字をリング状に",
+"居中排字": "文字を中央に",
+"边长": "辺の長さ",
+"高": "高さ",
+"圆角": "角の丸み",
+"边框粗": "枠の太さ",
+"内边距": "余白",
+"字": "文字",
+"字凸起": "凸の高さ",
+"顶上几层每一笔往里收一点，盖出来更实。0 = 不收": "上の数層で線を少し細くし、くっきり押せるようにします。0 = オフ",
+"字顶收窄": "先端を細く",
+"底板厚": "台座の厚さ",
+"不要手柄": "なし",
+"带手柄": "持ち手",
+"手指凹槽": "指の溝",
+"不要": "なし",
+"左右": "左右",
+"前后": "前後",
+"四面": "四面",
+"凹槽深度": "溝の深さ",
+"凹槽宽度": "溝の幅",
+"← 窄而集中": "← 狭く",
+"宽而平缓 →": "広く →",
+"弧线形状": "断面",
+"圆弧": "円弧",
+"边缘清楚": "縁がくっきり",
+"柔和": "なめらか",
+"边缘圆滑": "縁がなめらか",
+"腰身": "くびれ",
+"← 中间变细": "← 中央を細く",
+"笔直": "まっすぐ",
+"中间变粗 →": "中央を太く →",
+"更多设置": "詳細設定",
+"最大坡度": "最大傾斜",
+"← 更平缓、更好打": "← ゆるやか",
+"更陡、更紧凑 →": "急 →",
+"喷嘴直径": "ノズル径",
+"轮廓细度": "輪郭の精度",
+"快速 0.17mm": "速い 0.17mm",
+"标准 0.1mm": "標準 0.1mm",
+"精细 0.06mm": "精細 0.06mm",
+"Bambu Studio 配置": "Bambu Studio プロファイル",
+"0.10mm Standard @BBL A1 0.2 nozzle（参考配置）": "0.10mm Standard @BBL A1 0.2 nozzle（基準）",
+"印面朝上、手柄贴平台，不用支撑。": "印面を上、持ち手をベッドに。サポート不要。",
+"图文区域": "図柄エリア",
+"输入文字，下载 STL，直接切片。": "文字を入れて STL をダウンロード、そのままスライス。",
+"仅 STL": "STL のみ",
+"STL、规格卡、规格说明和设置文件": "STL、仕様カード、仕様書、設定ファイル",
+"加粗": "太らせる",
+"拉伸": "縦長",
+"关": "オフ",
+"仅图案": "画像のみ",
+"反色": "反転",
+"中心图案大小": "中央の画像サイズ",
+"外留边": "外側の余白",
+"阳文": "陽刻",
+"阴文": "陰刻",
+"手柄高度": "持ち手の高さ",
+"直段": "ストレート部",
+"手柄外扩": "持ち手の張り出し",
+"底部倒角": "底の面取り",
+"镜像印面": "印面を反転",
+"简繁": "簡体 ↔ 繁体",
+"换行，如 陈氏/之印": "で改行（例：山田/商店）",
+"方章": "正方形",
+"圆章": "丸型",
+"姓名方章": "正方形の名前印",
+"圆形店章": "丸型のショップ印",
+"长条章": "長方形",
+"滚轮": "ローラー",
+"滚轮压花": "エンボスローラー",
+"直径": "直径",
+"长度": "長さ",
+"内孔": "穴",
+"花纹深": "模様の深さ",
+"每圈重复": "1 周の繰り返し",
+"沿长重复": "長さ方向の繰り返し",
+"图案间距": "模様の間隔",
+"两端留边": "両端の余白",
+"印章": "スタンプ",
+"切模": "抜き型",
+"饼干": "クッキー",
+"黏土": "粘土",
+"外形": "外形",
+"跟随图案": "図柄に沿う",
+"圆形外形": "円",
+"方形外形": "四角",
+"图案宽": "図柄の幅",
+"图案高": "図柄の高さ",
+"外扩": "広げ幅",
+"切模高度": "高さ",
+"高度": "高さ",
+"刀口厚": "刃先",
+"根部厚": "根元",
+"边沿宽": "ツバの幅",
+"边沿厚": "ツバの厚さ",
+"内部压纹（一压同时切形和压花）": "内側に型押し（抜くと同時に模様も付く）",
+"压纹离刀口": "型押しの深さ",
+"类别": "種類",
+"切模类型": "タイプ",
+"下沿斜边（45°，免支撑）": "下側を斜めに（45°、サポート不要）",
+"适应": "収める",
+"铺满": "敷き詰め",
+"填充": "配置"
+};
+const I18N_KO = {
+"印章打印器": "스탬프 메이커",
+"导入设置…": "설정 불러오기…",
+"预览与导出": "미리보기와 내보내기",
+"3D 模型预览，可拖动旋转": "3D 미리보기(드래그해 회전)",
+"拖动旋转 · 滚轮缩放": "드래그로 회전 · 휠로 확대/축소",
+"印面已镜像": "인면 좌우 반전됨",
+"盖出来的效果": "찍힌 모양",
+"印面": "인면",
+"总高": "전체 높이",
+"文字区域": "글자 영역",
+"下载 STL + 规格": "STL + 사양 다운로드",
+"模型信息": "모델 정보",
+"模板": "템플릿",
+"设置": "설정",
+"文字": "글자",
+"图案": "이미지",
+"手柄": "손잡이",
+"打印": "출력",
+"印章文字": "스탬프 글자",
+"排列": "방향",
+"竖排·右起": "세로쓰기(오른쪽부터)",
+"横排": "가로쓰기",
+"字间距": "자간",
+"环形文字": "둥근 글자",
+"环字高": "둥근 글자 높이",
+"环绕角度": "둥근 글자 각도",
+"距边框": "테두리와 거리",
+"中心": "가운데",
+"五角星": "별",
+"无": "없음",
+"中心文字": "가운데 글자",
+"中心大小": "가운데 크기",
+"下方文字": "아래 글자",
+"字高": "글자 높이",
+"下移": "아래로 이동",
+"简 → 繁": "간 → 번",
+"繁 → 简": "번 → 간",
+"字体": "글꼴",
+"字重": "두께",
+"英文建议换「英文」组的字体，如 Roboto Slab、Bebas Neue。": "영문에는 ‘영어’ 그룹 글꼴(Roboto Slab, Bebas Neue 등)을 추천합니다.",
+"上传 .ttf / .otf，会记在这个浏览器里": ".ttf / .otf 업로드(이 브라우저에 저장됨)",
+"上传字体…": "글꼴 업로드…",
+"移除此字体": "이 글꼴 삭제",
+"上传图片…": "이미지 업로드…",
+"移除图片": "이미지 삭제",
+"PNG / JPG / SVG。黑白分明的 logo、剪影最好，照片不适合。": "PNG / JPG / SVG. 흑백이 뚜렷한 로고나 실루엣이 가장 좋고, 사진은 맞지 않습니다.",
+"图案转成黑白后的样子": "흑백으로 바꾼 이미지",
+"红色部分会凸起。": "빨간 부분이 볼록하게 나옵니다.",
+"用法": "사용",
+"图案 + 文字": "이미지 + 글자",
+"深浅阈值": "임계값",
+"← 只要最深的": "← 진한 곳만",
+"浅一点的也算 →": "연한 곳도 →",
+"排版": "레이아웃",
+"位置": "위치",
+"图在上": "이미지 위",
+"图在下": "이미지 아래",
+"图在左": "이미지 왼쪽",
+"图在右": "이미지 오른쪽",
+"对齐": "정렬",
+"靠左": "왼쪽",
+"水平居中": "가운데",
+"靠右": "오른쪽",
+"靠上": "위",
+"垂直居中": "가운데",
+"靠下": "아래",
+"间距": "간격",
+"图案大小": "이미지 크기",
+"圆章的图案放在中间。": "원형 스탬프는 이미지가 가운데에 들어갑니다.",
+"形状": "모양",
+"方形": "정사각형",
+"长方形": "직사각형",
+"圆形": "원형",
+"环形排字": "글자를 둥글게",
+"居中排字": "글자를 가운데에",
+"边长": "변 길이",
+"高": "높이",
+"圆角": "모서리 둥글기",
+"边框粗": "테두리",
+"内边距": "여백",
+"字": "글자",
+"字凸起": "돌출 높이",
+"顶上几层每一笔往里收一点，盖出来更实。0 = 不收": "위쪽 몇 층의 획을 살짝 좁혀 더 선명하게 찍히게 합니다. 0 = 끔",
+"字顶收窄": "윗면 좁히기",
+"底板厚": "받침판 두께",
+"不要手柄": "없음",
+"带手柄": "손잡이",
+"手指凹槽": "손가락 홈",
+"不要": "없음",
+"左右": "좌우",
+"前后": "앞뒤",
+"四面": "네 면",
+"凹槽深度": "홈 깊이",
+"凹槽宽度": "홈 너비",
+"← 窄而集中": "← 좁게",
+"宽而平缓 →": "넓게 →",
+"弧线形状": "단면",
+"圆弧": "원호",
+"边缘清楚": "가장자리 또렷",
+"柔和": "부드럽게",
+"边缘圆滑": "가장자리 둥글게",
+"腰身": "허리",
+"← 中间变细": "← 가운데 가늘게",
+"笔直": "일자",
+"中间变粗 →": "가운데 굵게 →",
+"更多设置": "추가 설정",
+"最大坡度": "최대 경사",
+"← 更平缓、更好打": "← 완만하게",
+"更陡、更紧凑 →": "가파르게 →",
+"喷嘴直径": "노즐",
+"轮廓细度": "윤곽 정밀도",
+"快速 0.17mm": "빠름 0.17mm",
+"标准 0.1mm": "표준 0.1mm",
+"精细 0.06mm": "정밀 0.06mm",
+"Bambu Studio 配置": "Bambu Studio 프로파일",
+"0.10mm Standard @BBL A1 0.2 nozzle（参考配置）": "0.10mm Standard @BBL A1 0.2 nozzle (기준)",
+"印面朝上、手柄贴平台，不用支撑。": "인면은 위, 손잡이는 베드에. 서포트 필요 없음.",
+"图文区域": "디자인 영역",
+"输入文字，下载 STL，直接切片。": "글자를 넣고 STL을 받아 바로 슬라이스.",
+"仅 STL": "STL만",
+"STL、规格卡、规格说明和设置文件": "STL, 사양 카드, 사양서, 설정 파일",
+"加粗": "굵게 +",
+"拉伸": "늘이기",
+"关": "끔",
+"仅图案": "이미지만",
+"反色": "반전",
+"中心图案大小": "가운데 이미지 크기",
+"外留边": "바깥 여백",
+"阳文": "양각",
+"阴文": "음각",
+"手柄高度": "손잡이 높이",
+"直段": "직선부",
+"手柄外扩": "손잡이 확장",
+"底部倒角": "아래 모따기",
+"镜像印面": "인면 좌우 반전",
+"简繁": "간체 ↔ 번체",
+"换行，如 陈氏/之印": "로 줄바꿈 (예: 감사/합니다)",
+"方章": "정사각형",
+"圆章": "원형",
+"姓名方章": "정사각형 이름 도장",
+"圆形店章": "원형 가게 스탬프",
+"长条章": "직사각형",
+"滚轮": "롤러",
+"滚轮压花": "엠보싱 롤러",
+"直径": "지름",
+"长度": "길이",
+"内孔": "구멍",
+"花纹深": "무늬 깊이",
+"每圈重复": "둘레 반복",
+"沿长重复": "길이 반복",
+"图案间距": "무늬 간격",
+"两端留边": "양끝 여백",
+"印章": "스탬프",
+"切模": "커터",
+"饼干": "쿠키",
+"黏土": "점토",
+"外形": "외형",
+"跟随图案": "디자인 따라",
+"圆形外形": "원",
+"方形外形": "사각",
+"图案宽": "디자인 너비",
+"图案高": "디자인 높이",
+"外扩": "확장",
+"切模高度": "높이",
+"高度": "높이",
+"刀口厚": "칼날",
+"根部厚": "밑동",
+"边沿宽": "받침 폭",
+"边沿厚": "받침 두께",
+"内部压纹（一压同时切形和压花）": "안쪽 압인(한 번에 자르고 무늬도 찍기)",
+"压纹离刀口": "압인 간격",
+"类别": "종류",
+"切模类型": "유형",
+"下沿斜边（45°，免支撑）": "아래쪽 경사(45°, 서포트 없이)",
+"适应": "맞춤",
+"铺满": "채우기",
+"填充": "배치"
+};
+const I18N = { en: I18N_EN, ja: I18N_JA, ko: I18N_KO };
 const zhText = new WeakMap(), zhAttr = new WeakMap(), HAS_ZH = /[\u3400-\u9fff]/;
 function applyLang() {
-  document.documentElement.lang = LANG === 'en' ? 'en' : 'zh-CN';
-  document.title = tl('印章打印器', 'Stamp Maker');
+  document.documentElement.lang = { zh: 'zh-CN', en: 'en', ja: 'ja', ko: 'ko' }[LANG];
+  document.title = tl('印章打印器', 'Stamp Maker', 'スタンプメーカー', '스탬프 메이커');
+  const D = I18N[LANG] || {}, tr = zh => D[zh] || (LANG !== 'zh' && I18N_EN[zh]) || null;
   const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let n; (n = walk.nextNode());) {
-    const pe = n.parentElement; if (!pe || pe.closest('script,style,#font,#weight,#status,#warn,.kv,.mark')) continue;
+    const pe = n.parentElement; if (!pe || pe.closest('script,style,#font,#weight,#status,#warn,.kv,.mark,#langSel')) continue;
     if (!zhText.has(n)) { if (!HAS_ZH.test(n.nodeValue)) continue; zhText.set(n, n.nodeValue); }
-    const zh = zhText.get(n), key = zh.trim(), en = I18N_EN[key];
-    n.nodeValue = LANG === 'en' && en ? zh.replace(key, en) : zh;
+    const zh = zhText.get(n), key = zh.trim(), t = tr(key);
+    n.nodeValue = t ? zh.replace(key, t) : zh;
   }
   document.querySelectorAll('[title],[aria-label],[placeholder]').forEach(el => {
     let m = zhAttr.get(el); if (!m) { m = {}; zhAttr.set(el, m); }
     for (const a of ['title', 'aria-label', 'placeholder']) {
       const v = el.getAttribute(a); if (v == null) continue;
       if (!(a in m)) { if (!HAS_ZH.test(v)) continue; m[a] = v; }
-      el.setAttribute(a, LANG === 'en' && I18N_EN[m[a]] ? I18N_EN[m[a]] : m[a]);
+      el.setAttribute(a, tr(m[a]) || m[a]);
     }
   });
-  $('#langBtn').textContent = LANG === 'en' ? '中文' : 'English';
+  $('#langSel').value = LANG;
 }
-$('#langBtn').addEventListener('click', () => {
-  LANG = LANG === 'en' ? 'zh' : 'en'; try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {}
+$('#langSel').addEventListener('change', e => {
+  LANG = LANGS.includes(e.target.value) ? e.target.value : 'en'; try { localStorage.setItem(LANG_KEY, LANG); } catch (er) {}
   applyLang(); fillFontSelect(); syncUI(); status(''); regenerate();
 });
 
